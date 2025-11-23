@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Loader2, LogOut, Save, Upload, X } from "lucide-react";
+import { Shield, Loader2, LogOut, Save, Upload, X, Send } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -23,6 +23,8 @@ const Admin = () => {
   const [captchaMessage, setCaptchaMessage] = useState("");
   const [welcomeImageUrl, setWelcomeImageUrl] = useState("");
   const [welcomeImageFile, setWelcomeImageFile] = useState<File | null>(null);
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
   const [buttons, setButtons] = useState<any[]>([]);
   const [isAddingButton, setIsAddingButton] = useState(false);
   const [editingButton, setEditingButton] = useState<any>(null);
@@ -245,6 +247,54 @@ const Admin = () => {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSendBroadcast = async () => {
+    if (!broadcastMessage.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Le message ne peut pas être vide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!botConfig) {
+      toast({
+        title: "Erreur",
+        description: "Configuration du bot non trouvée",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingBroadcast(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('broadcast-message', {
+        body: {
+          bot_id: botConfig.id,
+          message: broadcastMessage,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Message envoyé",
+        description: `Message diffusé à ${data.sent_count} utilisateur(s)`,
+      });
+
+      setBroadcastMessage("");
+    } catch (error) {
+      console.error('Broadcast error:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer le message",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingBroadcast(false);
     }
   };
 
@@ -520,13 +570,16 @@ const Admin = () => {
 
         {/* Content */}
         <Tabs defaultValue="messages" className="space-y-4 md:space-y-6">
-          <TabsList className="grid w-full grid-cols-2 h-auto">
+          <TabsList className="grid w-full grid-cols-3 h-auto">
             <TabsTrigger value="messages" className="text-xs sm:text-sm px-2 py-2">
               <span className="hidden sm:inline">Messages</span>
               <span className="sm:hidden">Msg</span>
             </TabsTrigger>
             <TabsTrigger value="buttons" className="text-xs sm:text-sm px-2 py-2">
               Boutons
+            </TabsTrigger>
+            <TabsTrigger value="broadcast" className="text-xs sm:text-sm px-2 py-2">
+              Pub
             </TabsTrigger>
           </TabsList>
 
@@ -978,6 +1031,68 @@ const Admin = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          <TabsContent value="broadcast" className="space-y-4 md:space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Message de Publicité</CardTitle>
+                <CardDescription>
+                  Envoyez un message à tous les utilisateurs qui ont utilisé le bot
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card className="border-telegram/20">
+                  <CardHeader>
+                    <CardTitle className="text-sm">Formatage HTML Telegram</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="bg-muted/50 p-4 rounded-lg space-y-1 text-sm font-mono">
+                      <div><code className="text-telegram">&lt;b&gt;</code>gras<code className="text-telegram">&lt;/b&gt;</code></div>
+                      <div><code className="text-telegram">&lt;i&gt;</code>italique<code className="text-telegram">&lt;/i&gt;</code></div>
+                      <div><code className="text-telegram">&lt;u&gt;</code>souligné<code className="text-telegram">&lt;/u&gt;</code></div>
+                      <div><code className="text-telegram">&lt;code&gt;</code>code<code className="text-telegram">&lt;/code&gt;</code></div>
+                      <div><code className="text-telegram">&lt;a href="URL"&gt;</code>lien<code className="text-telegram">&lt;/a&gt;</code></div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-2">
+                  <Label>Message à diffuser</Label>
+                  <Textarea
+                    value={broadcastMessage}
+                    onChange={(e) => setBroadcastMessage(e.target.value)}
+                    rows={10}
+                    className="font-mono text-sm"
+                    placeholder="Exemple:&#10;📢 &lt;b&gt;Annonce importante!&lt;/b&gt;&#10;&#10;Nouveau contenu disponible..."
+                  />
+                </div>
+
+                <Button
+                  onClick={handleSendBroadcast}
+                  disabled={isSendingBroadcast || !broadcastMessage.trim()}
+                  className="w-full bg-telegram hover:bg-telegram-dark"
+                >
+                  {isSendingBroadcast ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Envoi en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Envoyer à tous les utilisateurs
+                    </>
+                  )}
+                </Button>
+
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    ⚠️ Le message sera envoyé à tous les utilisateurs ayant utilisé la commande /start de votre bot.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
