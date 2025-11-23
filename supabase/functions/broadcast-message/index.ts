@@ -8,6 +8,7 @@ const corsHeaders = {
 interface BroadcastRequest {
   bot_id: string;
   message: string;
+  media_urls?: string[];
 }
 
 Deno.serve(async (req) => {
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
     );
 
     // Parse request body
-    const { bot_id, message }: BroadcastRequest = await req.json();
+    const { bot_id, message, media_urls = [] }: BroadcastRequest = await req.json();
 
     if (!bot_id || !message) {
       return new Response(
@@ -77,24 +78,77 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${users.length} users to send message to`);
 
+    // Determine media type
+    const hasMedia = media_urls && media_urls.length > 0;
+    const mediaType = hasMedia ? (media_urls[0].match(/\.(mp4|avi|mov|webm)$/i) ? 'video' : 'photo') : null;
+
     // Send message to each user
     let sentCount = 0;
     const errors = [];
 
     for (const user of users) {
       try {
-        const response = await fetch(
-          `https://api.telegram.org/bot${botToken}/sendMessage`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: user.telegram_id,
-              text: message,
-              parse_mode: 'HTML',
-            }),
-          }
-        );
+        let response;
+
+        if (!hasMedia) {
+          // Text only message
+          response = await fetch(
+            `https://api.telegram.org/bot${botToken}/sendMessage`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: user.telegram_id,
+                text: message,
+                parse_mode: 'HTML',
+              }),
+            }
+          );
+        } else if (media_urls.length === 1) {
+          // Single media with caption
+          const mediaUrl = media_urls[0];
+          const isVideo = mediaUrl.match(/\.(mp4|avi|mov|webm)$/i);
+          
+          const endpoint = isVideo ? 'sendVideo' : 'sendPhoto';
+          const mediaField = isVideo ? 'video' : 'photo';
+          
+          response = await fetch(
+            `https://api.telegram.org/bot${botToken}/${endpoint}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: user.telegram_id,
+                [mediaField]: mediaUrl,
+                caption: message,
+                parse_mode: 'HTML',
+              }),
+            }
+          );
+        } else {
+          // Multiple media - use sendMediaGroup
+          const mediaGroup = media_urls.map((url, index) => {
+            const isVideo = url.match(/\.(mp4|avi|mov|webm)$/i);
+            return {
+              type: isVideo ? 'video' : 'photo',
+              media: url,
+              // Add caption only to first media
+              ...(index === 0 ? { caption: message, parse_mode: 'HTML' } : {})
+            };
+          });
+
+          response = await fetch(
+            `https://api.telegram.org/bot${botToken}/sendMediaGroup`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: user.telegram_id,
+                media: mediaGroup,
+              }),
+            }
+          );
+        }
 
         const result = await response.json();
 

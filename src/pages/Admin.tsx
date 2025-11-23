@@ -25,6 +25,7 @@ const Admin = () => {
   const [welcomeImageFile, setWelcomeImageFile] = useState<File | null>(null);
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+  const [broadcastMediaFiles, setBroadcastMediaFiles] = useState<File[]>([]);
   const [buttons, setButtons] = useState<any[]>([]);
   const [isAddingButton, setIsAddingButton] = useState(false);
   const [editingButton, setEditingButton] = useState<any>(null);
@@ -271,10 +272,36 @@ const Admin = () => {
 
     setIsSendingBroadcast(true);
     try {
+      // Upload media files if any
+      const mediaUrls: string[] = [];
+      
+      if (broadcastMediaFiles.length > 0) {
+        for (const file of broadcastMediaFiles) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `broadcast-${botConfig.id}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('welcome-images')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('welcome-images')
+            .getPublicUrl(fileName);
+
+          mediaUrls.push(publicUrl);
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('broadcast-message', {
         body: {
           bot_id: botConfig.id,
           message: broadcastMessage,
+          media_urls: mediaUrls,
         },
       });
 
@@ -286,6 +313,7 @@ const Admin = () => {
       });
 
       setBroadcastMessage("");
+      setBroadcastMediaFiles([]);
     } catch (error) {
       console.error('Broadcast error:', error);
       toast({
@@ -296,6 +324,37 @@ const Admin = () => {
     } finally {
       setIsSendingBroadcast(false);
     }
+  };
+
+  const handleBroadcastMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    const validFiles: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      
+      if (isImage || isVideo) {
+        validFiles.push(file);
+      }
+    }
+    
+    if (validFiles.length > 10) {
+      toast({
+        title: "Limite dépassée",
+        description: "Maximum 10 fichiers autorisés",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setBroadcastMediaFiles(validFiles);
+  };
+
+  const removeBroadcastMedia = (index: number) => {
+    setBroadcastMediaFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleAddButton = async () => {
@@ -1066,6 +1125,60 @@ const Admin = () => {
                     className="font-mono text-sm"
                     placeholder="Exemple:&#10;📢 &lt;b&gt;Annonce importante!&lt;/b&gt;&#10;&#10;Nouveau contenu disponible..."
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Images/Vidéos (optionnel)</Label>
+                  <div className="space-y-2">
+                    {broadcastMediaFiles.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {broadcastMediaFiles.map((file, index) => (
+                          <div key={index} className="relative group">
+                            {file.type.startsWith('image/') ? (
+                              <img 
+                                src={URL.createObjectURL(file)} 
+                                alt={`Media ${index + 1}`} 
+                                className="w-full h-24 object-cover rounded border"
+                              />
+                            ) : (
+                              <div className="w-full h-24 bg-muted rounded border flex items-center justify-center">
+                                <span className="text-xs text-muted-foreground">Vidéo</span>
+                              </div>
+                            )}
+                            <Button
+                              size="icon"
+                              variant="destructive"
+                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeBroadcastMedia(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*,video/*"
+                        multiple
+                        onChange={handleBroadcastMediaUpload}
+                        className="max-w-xs"
+                        id="broadcast-media"
+                      />
+                      <Label htmlFor="broadcast-media" className="cursor-pointer">
+                        <Button variant="outline" asChild>
+                          <span>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Ajouter des médias
+                          </span>
+                        </Button>
+                      </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Maximum 10 fichiers. Formats: images (JPG, PNG, etc.) et vidéos. Les médias seront envoyés groupés avec le message.
+                    </p>
+                  </div>
                 </div>
 
                 <Button
