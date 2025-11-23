@@ -65,24 +65,6 @@ const Admin = () => {
         return;
       }
 
-      // Verify admin role server-side
-      const response = await supabase.functions.invoke('verify-admin', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-
-      if (response.error || !response.data?.isAdmin) {
-        await supabase.auth.signOut();
-        toast({
-          title: "Accès refusé",
-          description: "Vous n'avez pas les permissions administrateur",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
-      }
-
       // Load bot config first
       const { data: config, error: configError } = await supabase
         .from('bot_configs')
