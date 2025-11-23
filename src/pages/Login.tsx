@@ -50,26 +50,9 @@ const Login = () => {
       }
 
       if (data.session) {
-        // Verify admin role server-side
-        const response = await supabase.functions.invoke('verify-admin', {
-          headers: {
-            Authorization: `Bearer ${data.session.access_token}`
-          }
-        });
-
-        if (response.error || !response.data?.isAdmin) {
-          await supabase.auth.signOut();
-          toast({
-            title: "Accès refusé",
-            description: "Vous n'avez pas les permissions administrateur",
-            variant: "destructive",
-          });
-          return;
-        }
-
         toast({
           title: "Connexion réussie",
-          description: "Bienvenue dans le panel administrateur",
+          description: "Bienvenue ! Configurez votre bot Telegram",
         });
         navigate("/admin");
       }
@@ -157,9 +140,9 @@ const Login = () => {
             <Shield className="w-8 h-8 text-telegram" />
           </div>
           <div>
-            <CardTitle className="text-2xl">Panel Administrateur</CardTitle>
+            <CardTitle className="text-2xl">Tableau de Bord</CardTitle>
             <CardDescription>
-              Gérez votre bot Telegram
+              Créez et gérez votre bot Telegram
             </CardDescription>
           </div>
         </CardHeader>

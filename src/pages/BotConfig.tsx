@@ -27,18 +27,6 @@ const BotConfig = () => {
         return;
       }
 
-      const { data: isAdmin, error: roleError } = await supabase.functions.invoke('verify-admin');
-      
-      if (roleError || !isAdmin?.isAdmin) {
-        toast({
-          title: "Accès refusé",
-          description: "Vous n'avez pas les permissions nécessaires.",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
-      }
-
       const { data: config, error: configError } = await supabase
         .from('bot_configs')
         .select('*')
