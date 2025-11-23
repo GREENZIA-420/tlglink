@@ -30,6 +30,13 @@ const Login = () => {
       }
     };
     checkAuth();
+
+    // Load saved email if remember me was checked
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,14 +44,6 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // Configure session storage based on remember me option
-      if (!rememberMe) {
-        // Use session storage (expires when browser closes)
-        await supabase.auth.updateUser({
-          data: { session_storage: 'session' }
-        });
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -60,6 +59,13 @@ const Login = () => {
       }
 
       if (data.session) {
+        // Save or remove email based on remember me checkbox
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+
         toast({
           title: "Connexion réussie",
           description: "Bienvenue ! Configurez votre bot Telegram",
