@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Loader2, LogOut, Save, Send, Upload, X } from "lucide-react";
+import { Shield, Loader2, LogOut, Save, Upload, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,15 +17,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSettingWebhook, setIsSettingWebhook] = useState(false);
   const [botId, setBotId] = useState<string | null>(null);
   const [botConfig, setBotConfig] = useState<any>(null);
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [captchaMessage, setCaptchaMessage] = useState("");
-  const [botToken, setBotToken] = useState("");
   const [welcomeImageUrl, setWelcomeImageUrl] = useState("");
   const [welcomeImageFile, setWelcomeImageFile] = useState<File | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState("");
   const [buttons, setButtons] = useState<any[]>([]);
   const [isAddingButton, setIsAddingButton] = useState(false);
   const [editingButton, setEditingButton] = useState<any>(null);
@@ -47,9 +44,6 @@ const Admin = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const projectUrl = "https://dtpjpsxbevgacckjmicu.supabase.co";
-  const fullWebhookUrl = `${projectUrl}/functions/v1/telegram-webhook`;
 
   useEffect(() => {
     checkAuthAndLoadSettings();
@@ -88,8 +82,6 @@ const Admin = () => {
 
       setBotConfig(config);
       setBotId(config.id);
-      setBotToken(config.bot_token);
-      setWebhookUrl(config.webhook_url || "");
 
       // Load settings for this bot
       const { data: settings, error } = await supabase
@@ -253,52 +245,6 @@ const Admin = () => {
       });
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleSetWebhook = async () => {
-    if (!botToken || !webhookUrl) {
-      toast({
-        title: "Erreur",
-        description: "Token ou URL webhook manquant",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSettingWebhook(true);
-    try {
-      const response = await fetch(
-        `https://api.telegram.org/bot${botToken}/setWebhook`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: webhookUrl }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.ok) {
-        toast({
-          title: "✅ Webhook configuré",
-          description: "Le bot est maintenant opérationnel",
-        });
-      } else {
-        toast({
-          title: "Erreur",
-          description: data.description || "Échec de la configuration",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de configurer le webhook",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSettingWebhook(false);
     }
   };
 
@@ -574,17 +520,13 @@ const Admin = () => {
 
         {/* Content */}
         <Tabs defaultValue="messages" className="space-y-4 md:space-y-6">
-          <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsList className="grid w-full grid-cols-2 h-auto">
             <TabsTrigger value="messages" className="text-xs sm:text-sm px-2 py-2">
               <span className="hidden sm:inline">Messages</span>
               <span className="sm:hidden">Msg</span>
             </TabsTrigger>
             <TabsTrigger value="buttons" className="text-xs sm:text-sm px-2 py-2">
               Boutons
-            </TabsTrigger>
-            <TabsTrigger value="webhook" className="text-xs sm:text-sm px-2 py-2">
-              <span className="hidden sm:inline">Configuration Webhook</span>
-              <span className="sm:hidden">Webhook</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1036,65 +978,6 @@ const Admin = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </TabsContent>
-
-          <TabsContent value="webhook" className="space-y-4 md:space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuration du Webhook</CardTitle>
-                <CardDescription>
-                  Configurez le webhook Telegram pour activer le bot
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>URL du Webhook (lecture seule)</Label>
-                  <Input
-                    value={fullWebhookUrl}
-                    readOnly
-                    className="font-mono text-sm bg-muted"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bot-token">Token du Bot Telegram</Label>
-                  <Input
-                    id="bot-token"
-                    type="password"
-                    placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-                    value={botToken}
-                    onChange={(e) => setBotToken(e.target.value)}
-                  />
-                </div>
-
-                <Button
-                  onClick={handleSetWebhook}
-                  disabled={isSettingWebhook}
-                  className="w-full bg-telegram hover:bg-telegram-dark"
-                >
-                  {isSettingWebhook ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Configuration...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Configurer le Webhook
-                    </>
-                  )}
-                </Button>
-
-                {webhookUrl && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm font-medium mb-1">Statut:</p>
-                    <p className="text-sm text-muted-foreground">
-                      ✅ Webhook configuré et actif
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
