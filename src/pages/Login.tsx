@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -15,6 +16,7 @@ const Login = () => {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,6 +37,14 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      // Configure session storage based on remember me option
+      if (!rememberMe) {
+        // Use session storage (expires when browser closes)
+        await supabase.auth.updateUser({
+          data: { session_storage: 'session' }
+        });
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -178,6 +188,16 @@ const Login = () => {
                     required
                     disabled={isLoading}
                   />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="remember-me"
+                    checked={rememberMe}
+                    onCheckedChange={setRememberMe}
+                  />
+                  <Label htmlFor="remember-me" className="cursor-pointer">
+                    Se souvenir de moi
+                  </Label>
                 </div>
                 <Button
                   type="submit"
