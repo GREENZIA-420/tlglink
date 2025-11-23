@@ -134,8 +134,25 @@ const Admin = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/login");
+    try {
+      // Clear saved credentials
+      localStorage.removeItem('savedEmail');
+      localStorage.removeItem('savedPassword');
+      localStorage.removeItem('savedSalt');
+      localStorage.removeItem('savedIv');
+      localStorage.removeItem('rememberMe');
+      
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Navigate to login
+      navigate("/login");
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if there's an error, clear local data and redirect
+      localStorage.clear();
+      navigate("/login");
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
