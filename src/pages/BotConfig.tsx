@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Copy, Check, Send, Loader2 } from "lucide-react";
 
 const BotConfig = () => {
   const [botConfig, setBotConfig] = useState<any>(null);
@@ -14,6 +14,7 @@ const BotConfig = () => {
   const [botName, setBotName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSettingWebhook, setIsSettingWebhook] = useState(false);
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -142,6 +143,52 @@ const BotConfig = () => {
     }
   };
 
+  const handleSetWebhook = async () => {
+    if (!botToken || !botConfig?.webhook_url) {
+      toast({
+        title: "Erreur",
+        description: "Token ou URL webhook manquant",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSettingWebhook(true);
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot${botToken}/setWebhook`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: botConfig.webhook_url }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.ok) {
+        toast({
+          title: "✅ Webhook configuré",
+          description: "Le bot est maintenant opérationnel",
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: data.description || "Échec de la configuration",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de configurer le webhook",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSettingWebhook(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
@@ -207,30 +254,56 @@ const BotConfig = () => {
             </div>
 
             {botConfig && (
-              <div className="space-y-2">
-                <Label>URL du Webhook</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={botConfig.webhook_url || ""}
-                    readOnly
-                    className="font-mono text-xs"
-                  />
+              <>
+                <div className="space-y-2">
+                  <Label>URL du Webhook</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={botConfig.webhook_url || ""}
+                      readOnly
+                      className="font-mono text-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={copyWebhookUrl}
+                    >
+                      {copied ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Cette URL est générée automatiquement pour votre bot
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <h3 className="text-sm font-medium mb-2">Activation du Bot</h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Configurez le webhook Telegram pour activer votre bot
+                  </p>
                   <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={copyWebhookUrl}
+                    onClick={handleSetWebhook}
+                    disabled={isSettingWebhook}
+                    className="w-full"
                   >
-                    {copied ? (
-                      <Check className="h-4 w-4 text-green-500" />
+                    {isSettingWebhook ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Configuration...
+                      </>
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Configurer le Webhook
+                      </>
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Utilisez cette URL dans l'onglet Webhook pour configurer votre bot
-                </p>
-              </div>
+              </>
             )}
 
             <Button
