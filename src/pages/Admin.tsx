@@ -135,12 +135,9 @@ const Admin = () => {
 
   const handleLogout = async () => {
     try {
-      // Clear saved credentials
-      localStorage.removeItem('savedEmail');
-      localStorage.removeItem('savedPassword');
-      localStorage.removeItem('savedSalt');
-      localStorage.removeItem('savedIv');
-      localStorage.removeItem('rememberMe');
+      // Clear saved credentials (using correct keys from Login.tsx)
+      localStorage.removeItem('rememberedEmail');
+      localStorage.removeItem('rememberedPassword');
       
       // Sign out from Supabase
       await supabase.auth.signOut();
