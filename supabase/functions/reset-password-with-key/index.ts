@@ -35,8 +35,12 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
+    console.log('Attempting to reset password with recovery key');
+    console.log('Recovery key input (first 8 chars):', recovery_key.substring(0, 8) + '...');
+
     // Hasher la clé fournie pour la comparer avec celle en base
     const hashedKey = await hashRecoveryKey(recovery_key);
+    console.log('Hashed key (first 16 chars):', hashedKey.substring(0, 16) + '...');
 
     // Vérifier la clé de récupération hashée
     const { data: keyData, error: keyError } = await supabaseClient
@@ -47,8 +51,23 @@ Deno.serve(async (req) => {
       .is('used_at', null)
       .single();
 
+    console.log('Database query result:', { found: !!keyData, error: keyError?.message });
+    
     if (keyError || !keyData) {
-      console.error('Key verification error:', keyError);
+      console.error('Key verification failed:', {
+        error: keyError?.message,
+        code: keyError?.code,
+        details: keyError?.details,
+      });
+      
+      // Vérifier si des clés existent pour debug
+      const { data: allKeys, error: allKeysError } = await supabaseClient
+        .from('recovery_keys')
+        .select('id, user_id, is_active, used_at, created_at')
+        .limit(5);
+      
+      console.log('All recovery keys in DB:', allKeys?.length || 0, 'keys found');
+      
       return new Response(
         JSON.stringify({ error: 'Clé de récupération invalide ou déjà utilisée' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
