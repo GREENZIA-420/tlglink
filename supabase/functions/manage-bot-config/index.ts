@@ -122,6 +122,29 @@ Deno.serve(async (req) => {
           .eq('admin_id', userId)
           .select()
           .single();
+
+        if (result.error) {
+          console.error('Database error:', result.error);
+          throw result.error;
+        }
+
+        // Si aucune URL de webhook n'est encore définie, la générer maintenant
+        if (!result.data.webhook_url) {
+          const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-webhook?bot_id=${result.data.id}`;
+          const updateResult = await supabaseClient
+            .from('bot_configs')
+            .update({ webhook_url: webhookUrl })
+            .eq('id', result.data.id)
+            .select()
+            .single();
+
+          if (updateResult.error) {
+            console.error('Webhook URL update error (update action):', updateResult.error);
+            throw updateResult.error;
+          }
+
+          result = updateResult;
+        }
       }
 
       if (result.error) {
