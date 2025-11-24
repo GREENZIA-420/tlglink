@@ -7,16 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Loader2, LogOut, Save, Upload, X, Send } from "lucide-react";
+import { Shield, Loader2, LogOut, Save, Upload, X, Send, Lock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEncrypting, setIsEncrypting] = useState(false);
   const [botId, setBotId] = useState<string | null>(null);
   const [botConfig, setBotConfig] = useState<any>(null);
   const [welcomeMessage, setWelcomeMessage] = useState("");
@@ -520,6 +522,29 @@ const Admin = () => {
     });
   };
 
+  const handleEncryptExistingTokens = async () => {
+    setIsEncrypting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('encrypt-existing-tokens');
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Rechiffrement terminé",
+        description: `${data.encrypted} token(s) rechiffré(s), ${data.skipped} déjà chiffré(s)`,
+      });
+    } catch (error) {
+      console.error('Encryption error:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de rechiffrer les tokens",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEncrypting(false);
+    }
+  };
+
   const handleUpdateButton = async () => {
     if (!editForm.label) {
       toast({
@@ -656,6 +681,35 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="messages" className="space-y-6">
+            <Alert className="border-yellow-500/50 bg-yellow-500/10">
+              <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              <AlertTitle>Sécurité - Rechiffrement des tokens</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p className="text-sm">
+                  Pour une sécurité maximale, rechiffrez vos tokens existants avec la nouvelle clé de chiffrement sécurisée.
+                </p>
+                <Button
+                  onClick={handleEncryptExistingTokens}
+                  disabled={isEncrypting}
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                >
+                  {isEncrypting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Rechiffrement en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Rechiffrer les tokens maintenant
+                    </>
+                  )}
+                </Button>
+              </AlertDescription>
+            </Alert>
+
             <Card className="border-telegram/20">
               <CardHeader>
                 <CardTitle>Formatage HTML Telegram</CardTitle>
