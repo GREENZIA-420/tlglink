@@ -1,34 +1,55 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Loader2, ArrowLeft, Lock, Users, Database } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ArrowLeft, Search, Ban, CheckCircle } from "lucide-react";
 import { authStorage } from "@/lib/auth";
 
+interface BotConfig {
+  id: string;
+  bot_name: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  last_login_at: string | null;
+  bot_configs: BotConfig[];
+  telegram_users_count: number;
+}
+
 const SuperAdmin = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isEncrypting, setIsEncrypting] = useState(false);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalBots: 0,
-    totalTelegramUsers: 0,
-    totalRegisteredUsers: 0,
-  });
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    checkAdminAccess();
-  }, []);
-
-  const checkAdminAccess = async () => {
-    setIsLoading(true);
+  const checkAuthAndLoadUsers = async () => {
     try {
       const session = authStorage.getSession();
       
@@ -38,330 +59,285 @@ const SuperAdmin = () => {
       }
 
       const userId = session.user.id;
+      const token = btoa(JSON.stringify(session));
 
-      // Check if user is admin
+      // Vérifier l'accès super admin
       const { data: userData } = await supabase
         .from('users')
         .select('role')
         .eq('id', userId)
         .single();
-
-      if (!userData || userData.role !== 'admin') {
+      
+      if (!userData || userData.role !== 'super_admin') {
         toast({
           title: "Accès refusé",
-          description: "Vous n'avez pas les permissions nécessaires",
+          description: "Vous devez être super admin pour accéder à cette page.",
           variant: "destructive",
         });
-        navigate("/admin");
+        navigate("/login");
         return;
       }
 
-      // Load stats
-      await loadStats();
+      // Charger tous les utilisateurs via l'edge function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-all-users`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erreur lors du chargement des utilisateurs');
+      }
+
+      const { users: usersData } = await response.json();
+      setUsers(usersData || []);
+      setFilteredUsers(usersData || []);
     } catch (error) {
-      console.error('Access check error:', error);
-      navigate("/admin");
+      console.error('Error:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les utilisateurs.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadStats = async () => {
-    setIsLoadingStats(true);
-    try {
-      // Count total users with roles
-      const { count: usersCount } = await supabase
-        .from('user_roles')
-        .select('*', { count: 'exact', head: true });
+  useEffect(() => {
+    checkAuthAndLoadUsers();
+  }, []);
 
-      // Count total bot configs
-      const { count: botsCount } = await supabase
-        .from('bot_configs')
-        .select('*', { count: 'exact', head: true });
-
-      // Count total telegram users
-      const { count: telegramUsersCount } = await supabase
-        .from('telegram_users')
-        .select('*', { count: 'exact', head: true });
-
-      // Count total registered users (from auth.users)
-      const { data: registeredUsersCount, error: countError } = await supabase
-        .rpc('count_registered_users');
-
-      if (countError) {
-        console.error('Error counting registered users:', countError);
-      }
-
-      setStats({
-        totalUsers: usersCount || 0,
-        totalBots: botsCount || 0,
-        totalTelegramUsers: telegramUsersCount || 0,
-        totalRegisteredUsers: registeredUsersCount || 0,
-      });
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    } finally {
-      setIsLoadingStats(false);
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredUsers(users);
+      return;
     }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = users.filter(user => 
+      user.email.toLowerCase().includes(query) ||
+      user.full_name?.toLowerCase().includes(query) ||
+      user.role.toLowerCase().includes(query) ||
+      user.bot_configs?.some(bot => bot.bot_name?.toLowerCase().includes(query))
+    );
+    setFilteredUsers(filtered);
+  }, [searchQuery, users]);
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
-  const handleEncryptExistingTokens = async () => {
-    setIsEncrypting(true);
+  const handleBanToggle = async (user: User) => {
     try {
-      const { data, error } = await supabase.functions.invoke('encrypt-existing-tokens');
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-      if (error) throw error;
+      const token = btoa(JSON.stringify(session));
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-user-ban`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            targetUserId: user.id,
+            isBanned: user.is_active,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erreur lors de la modification du statut');
+      }
 
       toast({
-        title: "✅ Rechiffrement terminé",
-        description: `${data.encrypted} token(s) rechiffré(s), ${data.skipped} déjà chiffré(s)`,
+        title: user.is_active ? "Utilisateur banni" : "Utilisateur débanni",
+        description: user.is_active 
+          ? `${user.email} ne peut plus accéder au site et son bot est désactivé.`
+          : `${user.email} peut à nouveau accéder au site et son bot est réactivé.`,
       });
 
-      // Reload stats after encryption
-      await loadStats();
+      // Actualiser la liste
+      checkAuthAndLoadUsers();
     } catch (error) {
-      console.error('Encryption error:', error);
+      console.error('Error toggling ban:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de rechiffrer les tokens",
+        description: error instanceof Error ? error.message : "Impossible de modifier le statut de l'utilisateur.",
         variant: "destructive",
       });
-    } finally {
-      setIsEncrypting(false);
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-telegram" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
-      <div className="container max-w-5xl mx-auto px-4 py-4 md:py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate("/admin")}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-              <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-destructive" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Super Admin</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Gestion avancée du système
-              </p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 sm:p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate("/admin")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Super Admin - Gestion des Utilisateurs
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {users.length} utilisateur{users.length > 1 ? 's' : ''} enregistré{users.length > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Utilisateurs Inscrits
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingStats ? "..." : stats.totalRegisteredUsers}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Comptes auth créés
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Utilisateurs Admin
-              </CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingStats ? "..." : stats.totalUsers}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Comptes avec rôles
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Bots Configurés
-              </CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingStats ? "..." : stats.totalBots}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Bots actifs
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Utilisateurs Telegram
-              </CardTitle>
-              <Database className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingStats ? "..." : stats.totalTelegramUsers}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Total enregistrés
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Security Section */}
-        <div className="space-y-6">
-          <Card className="border-destructive/50">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-destructive" />
-                <CardTitle>Sécurité - Chiffrement</CardTitle>
-              </div>
-              <CardDescription>
-                Gestion du chiffrement des tokens bot
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert className="border-yellow-500/50 bg-yellow-500/10">
-                <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                <AlertTitle>Rechiffrement des tokens</AlertTitle>
-                <AlertDescription className="space-y-2">
-                  <p className="text-sm">
-                    Cette action rechiffre tous les tokens bot existants avec la clé de chiffrement sécurisée stockée dans les secrets Supabase.
-                  </p>
-                  <ul className="text-sm space-y-1 ml-4 list-disc">
-                    <li>Les tokens déjà chiffrés seront ignorés</li>
-                    <li>Les tokens en clair seront chiffrés avec AES-256-GCM</li>
-                    <li>Cette opération est sûre et peut être exécutée plusieurs fois</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex flex-col gap-4">
-                <Button
-                  onClick={handleEncryptExistingTokens}
-                  disabled={isEncrypting}
-                  variant="destructive"
-                  size="lg"
-                  className="w-full"
-                >
-                  {isEncrypting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Rechiffrement en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="mr-2 h-4 w-4" />
-                      Rechiffrer tous les tokens maintenant
-                    </>
-                  )}
-                </Button>
-
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p className="font-medium">ℹ️ Informations importantes :</p>
-                  <ul className="ml-4 space-y-0.5">
-                    <li>• Seuls les administrateurs peuvent effectuer cette action</li>
-                    <li>• L'opération utilise la clé ENCRYPTION_SALT des secrets Supabase</li>
-                    <li>• Les tokens chiffrés ne sont jamais affichés en clair dans l'interface</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Détails Système</CardTitle>
-              <CardDescription>
-                Informations techniques sur la configuration
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+        <Card className="border-2 shadow-xl">
+          <CardHeader>
+            <CardTitle>Liste des créateurs de bot</CardTitle>
+            <CardDescription>
+              Gérez tous les utilisateurs et leurs bots
+            </CardDescription>
+            <div className="relative mt-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par email, nom, rôle ou nom de bot..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Composant</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Nom complet</TableHead>
+                    <TableHead>Rôle</TableHead>
+                    <TableHead>Bot</TableHead>
+                    <TableHead>Utilisateurs Bot</TableHead>
                     <TableHead>Statut</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Créé le</TableHead>
+                    <TableHead>Dernière connexion</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Chiffrement</TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-500">
-                        Actif
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      AES-256-GCM avec SALT sécurisé
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">RLS</TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-500">
-                        Actif
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      Toutes les tables protégées
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Edge Functions</TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-500">
-                        Déployées
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      5 fonctions actives
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Authentification</TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-500">
-                        Configurée
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      Email + Rôles
-                    </TableCell>
-                  </TableRow>
+                  {filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                        {searchQuery ? "Aucun utilisateur trouvé" : "Aucun utilisateur enregistré"}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          {user.email}
+                        </TableCell>
+                        <TableCell>
+                          {user.full_name || <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            user.role === 'super_admin' 
+                              ? 'bg-purple-500/10 text-purple-600' 
+                              : user.role === 'admin'
+                              ? 'bg-blue-500/10 text-blue-600'
+                              : 'bg-gray-500/10 text-gray-600'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {user.bot_configs && user.bot_configs.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              {user.bot_configs.map((bot) => (
+                                <div key={bot.id} className="flex items-center gap-2">
+                                  <span className="font-mono text-sm">{bot.bot_name || 'Sans nom'}</span>
+                                  {bot.is_active ? (
+                                    <CheckCircle className="h-3 w-3 text-green-600" />
+                                  ) : (
+                                    <Ban className="h-3 w-3 text-destructive" />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Aucun bot</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center font-semibold">
+                          {user.telegram_users_count}
+                        </TableCell>
+                        <TableCell>
+                          {user.is_active ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600">
+                              Actif
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
+                              Banni
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {formatDate(user.created_at)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {formatDate(user.last_login_at)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {user.role !== 'super_admin' && (
+                            <Button
+                              size="sm"
+                              variant={user.is_active ? "destructive" : "outline"}
+                              onClick={() => handleBanToggle(user)}
+                            >
+                              {user.is_active ? "Bannir" : "Débannir"}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

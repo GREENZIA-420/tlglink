@@ -53,3 +53,9 @@ verify_jwt = false
 
 [functions.manage-telegram-user]
 verify_jwt = false
+
+[functions.get-all-users]
+verify_jwt = false
+
+[functions.manage-user-ban]
+verify_jwt = false
