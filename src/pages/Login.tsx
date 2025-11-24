@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { Shield, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { encryptPassword, decryptPassword } from "@/lib/encryption";
+import { login, register, authStorage } from "@/lib/auth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -24,13 +24,10 @@ const Login = () => {
 
   useEffect(() => {
     // Check if already logged in
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/admin");
-      }
-    };
-    checkAuth();
+    if (authStorage.isAuthenticated()) {
+      navigate("/admin");
+      return;
+    }
 
     // Load saved credentials if remember me was checked
     const loadSavedCredentials = async () => {
@@ -58,46 +55,32 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      await login(email, password);
 
-      if (error) {
-        toast({
-          title: "Erreur de connexion",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data.session) {
-        // Save or remove credentials based on remember me checkbox
-        if (rememberMe) {
-          localStorage.setItem('rememberedEmail', email);
-          try {
-            const encryptedPassword = await encryptPassword(password);
-            localStorage.setItem('rememberedPassword', encryptedPassword);
-          } catch (error) {
-            console.error('Failed to encrypt password:', error);
-          }
-        } else {
-          localStorage.removeItem('rememberedEmail');
-          localStorage.removeItem('rememberedPassword');
+      // Save or remove credentials based on remember me checkbox
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+        try {
+          const encryptedPassword = await encryptPassword(password);
+          localStorage.setItem('rememberedPassword', encryptedPassword);
+        } catch (error) {
+          console.error('Failed to encrypt password:', error);
         }
-
-        toast({
-          title: "Connexion réussie",
-          description: "Bienvenue ! Configurez votre bot Telegram",
-        });
-        navigate("/admin");
+      } else {
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPassword');
       }
+
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue ! Configurez votre bot Telegram",
+      });
+      navigate("/admin");
     } catch (error) {
       console.error('Login error:', error);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la connexion",
+        title: "Erreur de connexion",
+        description: error instanceof Error ? error.message : "Une erreur est survenue",
         variant: "destructive",
       });
     } finally {
@@ -129,39 +112,18 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
+      await register(signupEmail, signupPassword);
+
+      toast({
+        title: "Inscription réussie",
+        description: "Votre compte a été créé avec succès !",
       });
-
-      if (error) {
-        toast({
-          title: "Erreur d'inscription",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data.user) {
-        toast({
-          title: "Inscription réussie",
-          description: "Vous pouvez maintenant vous connecter. Veuillez contacter un administrateur pour obtenir les droits d'accès.",
-        });
-        
-        // Reset form
-        setSignupEmail("");
-        setSignupPassword("");
-        setConfirmPassword("");
-      }
+      navigate("/admin");
     } catch (error) {
       console.error('Signup error:', error);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'inscription",
+        title: "Erreur d'inscription",
+        description: error instanceof Error ? error.message : "Une erreur est survenue",
         variant: "destructive",
       });
     } finally {
@@ -296,7 +258,7 @@ const Login = () => {
                   )}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Après l'inscription, contactez un administrateur pour obtenir les droits d'accès.
+                  Vous pouvez créer votre compte librement. Contactez un admin pour obtenir plus de droits.
                 </p>
               </form>
             </TabsContent>

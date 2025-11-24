@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ArrowLeft, Search, Ban } from "lucide-react";
+import { authStorage } from "@/lib/auth";
 
 interface TelegramUser {
   id: string;
@@ -50,16 +51,23 @@ const Users = () => {
 
   const checkAuthAndLoadUsers = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const session = authStorage.getSession();
       
-      if (!user) {
+      if (!session) {
         navigate("/login");
         return;
       }
 
-      const { data: isAdmin, error: roleError } = await supabase.functions.invoke('verify-admin');
+      const userId = session.user.id;
+
+      // Verify admin access
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
       
-      if (roleError || !isAdmin?.isAdmin) {
+      if (!userData || userData.role !== 'admin') {
         toast({
           title: "Accès refusé",
           description: "Vous n'avez pas les permissions nécessaires.",
@@ -73,7 +81,7 @@ const Users = () => {
       const { data: botConfig, error: configError } = await supabase
         .from('bot_configs')
         .select('*')
-        .eq('admin_id', user.id)
+        .eq('admin_id', userId)
         .maybeSingle();
 
       if (configError || !botConfig) {

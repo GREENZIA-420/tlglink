@@ -8,6 +8,7 @@ import { Shield, Loader2, ArrowLeft, Lock, Users, Database } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { authStorage } from "@/lib/auth";
 
 const SuperAdmin = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -29,22 +30,23 @@ const SuperAdmin = () => {
   const checkAdminAccess = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = authStorage.getSession();
       
       if (!session) {
         navigate("/login");
         return;
       }
 
-      // Check if user is admin
-      const { data: userRole, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+      const userId = session.user.id;
 
-      if (roleError || !userRole) {
+      // Check if user is admin
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (!userData || userData.role !== 'admin') {
         toast({
           title: "Accès refusé",
           description: "Vous n'avez pas les permissions nécessaires",

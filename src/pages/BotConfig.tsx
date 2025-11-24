@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Copy, Check, Send, Loader2 } from "lucide-react";
+import { authStorage } from "@/lib/auth";
 
 const BotConfig = () => {
   const [botConfig, setBotConfig] = useState<any>(null);
@@ -22,17 +23,19 @@ const BotConfig = () => {
 
   const loadBotConfig = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const session = authStorage.getSession();
       
-      if (!user) {
+      if (!session) {
         navigate("/login");
         return;
       }
 
+      const userId = session.user.id;
+
       const { data: config, error: configError } = await supabase
         .from('bot_configs')
         .select('*')
-        .eq('admin_id', user.id)
+        .eq('admin_id', userId)
         .maybeSingle();
 
       if (configError) throw configError;
@@ -74,11 +77,12 @@ const BotConfig = () => {
     setIsSaving(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const session = authStorage.getSession();
+      if (!session) return;
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No session');
+      const userId = session.user.id;
+      const { data: { session: supabaseSession } } = await supabase.auth.getSession();
+      if (!supabaseSession) throw new Error('No session');
 
       const action = botConfig ? 'update' : 'create';
       const payload: any = {
@@ -98,7 +102,7 @@ const BotConfig = () => {
       const { data, error } = await supabase.functions.invoke('manage-bot-config', {
         body: payload,
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${supabaseSession.access_token}`,
         },
       });
 
