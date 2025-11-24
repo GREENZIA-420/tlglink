@@ -1,9 +1,12 @@
 // Encryption utilities using Web Crypto API with AES-256-GCM
 // This is the server-side version for edge functions
 
-const SALT = 'lovable-bot-secure-salt-2024'; // Static salt for key derivation
-
 async function getEncryptionKey(): Promise<CryptoKey> {
+  const SALT = Deno.env.get('ENCRYPTION_SALT');
+  if (!SALT) {
+    throw new Error('ENCRYPTION_SALT is not configured');
+  }
+
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     'raw',

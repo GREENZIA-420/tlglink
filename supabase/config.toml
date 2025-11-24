@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.encrypt-existing-tokens]
 verify_jwt = true
+
+[functions.manage-bot-config]
+verify_jwt = true

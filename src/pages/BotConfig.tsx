@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Copy, Check, Send, Loader2 } from "lucide-react";
-import { encryptPassword, decryptPassword } from "@/lib/encryption";
 
 const BotConfig = () => {
   const [botConfig, setBotConfig] = useState<any>(null);
@@ -17,6 +16,7 @@ const BotConfig = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSettingWebhook, setIsSettingWebhook] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [tokenChanged, setTokenChanged] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -39,16 +39,10 @@ const BotConfig = () => {
 
       if (config) {
         setBotConfig(config);
-        // Decrypt the token for display/editing
-        try {
-          const decryptedToken = await decryptPassword(config.bot_token);
-          setBotToken(decryptedToken);
-        } catch (error) {
-          // If decryption fails, assume it's an unencrypted token (backward compatibility)
-          console.warn('Token decryption failed, assuming unencrypted token');
-          setBotToken(config.bot_token);
-        }
         setBotName(config.bot_name || "");
+        // Ne jamais afficher le token pour des raisons de sécurité
+        setBotToken("");
+        setTokenChanged(false);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -67,7 +61,8 @@ const BotConfig = () => {
   }, []);
 
   const handleSave = async () => {
-    if (!botToken.trim()) {
+    // Only validate token if it's a new config or token was changed
+    if ((!botConfig || tokenChanged) && !botToken.trim()) {
       toast({
         title: "Erreur",
         description: "Veuillez entrer le token du bot.",
@@ -82,54 +77,48 @@ const BotConfig = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook?bot_id=${botConfig?.id || 'NEW'}`;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session');
 
-      // Encrypt the token before storing
-      const encryptedToken = await encryptPassword(botToken);
+      const action = botConfig ? 'update' : 'create';
+      const payload: any = {
+        action,
+        botConfig: {
+          id: botConfig?.id,
+          bot_name: botName || null,
+          is_active: true,
+        },
+      };
 
-      if (botConfig) {
-        // Update existing config
-        const { error } = await supabase
-          .from('bot_configs')
-          .update({
-            bot_token: encryptedToken,
-            bot_name: botName || null,
-            webhook_url: webhookUrl,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', botConfig.id);
+      // Only include token if it was changed or it's a new config
+      if (!botConfig || tokenChanged) {
+        payload.botConfig.bot_token = botToken;
+      }
 
-        if (error) throw error;
-      } else {
-        // Create new config
-        const { data: newConfig, error } = await supabase
-          .from('bot_configs')
-          .insert({
-            admin_id: user.id,
-            bot_token: encryptedToken,
-            bot_name: botName || null,
-            webhook_url: webhookUrl,
-          })
-          .select()
-          .single();
+      const { data, error } = await supabase.functions.invoke('manage-bot-config', {
+        body: payload,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
-        if (error) throw error;
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
 
-        // Update webhook URL with actual bot_id
-        const actualWebhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook?bot_id=${newConfig.id}`;
+      // Update webhook URL with actual bot_id if new config
+      if (!botConfig && data.data) {
+        const actualWebhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook?bot_id=${data.data.id}`;
         await supabase
           .from('bot_configs')
           .update({ webhook_url: actualWebhookUrl })
-          .eq('id', newConfig.id);
-
-        setBotConfig(newConfig);
+          .eq('id', data.data.id);
       }
 
       await loadBotConfig();
 
       toast({
         title: "Succès",
-        description: "Configuration du bot enregistrée.",
+        description: "Configuration du bot enregistrée avec chiffrement sécurisé.",
       });
     } catch (error) {
       console.error('Error:', error);
@@ -156,10 +145,10 @@ const BotConfig = () => {
   };
 
   const handleSetWebhook = async () => {
-    if (!botToken || !botConfig?.webhook_url) {
+    if (!tokenChanged || !botToken || !botConfig?.webhook_url) {
       toast({
         title: "Erreur",
-        description: "Token ou URL webhook manquant",
+        description: "Veuillez d'abord entrer et enregistrer un nouveau token",
         variant: "destructive",
       });
       return;
@@ -252,17 +241,28 @@ const BotConfig = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="botToken">Token du bot *</Label>
+              <Label htmlFor="botToken">
+                Token du bot * 
+                {botConfig && <span className="text-xs text-muted-foreground ml-2">(Laissez vide pour conserver l'actuel)</span>}
+              </Label>
               <Input
                 id="botToken"
                 type="password"
-                placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+                placeholder={botConfig ? "Entrez un nouveau token pour le modifier" : "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"}
                 value={botToken}
-                onChange={(e) => setBotToken(e.target.value)}
+                onChange={(e) => {
+                  setBotToken(e.target.value);
+                  setTokenChanged(true);
+                }}
               />
               <p className="text-xs text-muted-foreground">
                 Obtenez votre token auprès de @BotFather sur Telegram
               </p>
+              {botConfig && !tokenChanged && (
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  ✓ Token actuel chiffré et sécurisé
+                </p>
+              )}
             </div>
 
             {botConfig && (
@@ -295,11 +295,14 @@ const BotConfig = () => {
                 <div className="pt-4 border-t">
                   <h3 className="text-sm font-medium mb-2">Activation du Bot</h3>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Configurez le webhook Telegram pour activer votre bot
+                    {tokenChanged 
+                      ? "Enregistrez d'abord le nouveau token, puis configurez le webhook Telegram"
+                      : "Configurez le webhook Telegram pour activer votre bot"
+                    }
                   </p>
                   <Button
                     onClick={handleSetWebhook}
-                    disabled={isSettingWebhook}
+                    disabled={isSettingWebhook || !tokenChanged}
                     className="w-full"
                   >
                     {isSettingWebhook ? (
