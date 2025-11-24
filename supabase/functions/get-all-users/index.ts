@@ -88,23 +88,26 @@ Deno.serve(async (req) => {
     // Compter les utilisateurs Telegram pour chaque bot
     const usersWithStats = await Promise.all(
       (users || []).map(async (user) => {
-        if (user.bot_configs && user.bot_configs.length > 0) {
+        let telegram_users_count = 0;
+        
+        // bot_configs peut être un objet ou null (relation one-to-one)
+        if (user.bot_configs) {
           const { count } = await supabase
             .from('telegram_users')
             .select('*', { count: 'exact', head: true })
-            .eq('bot_id', user.bot_configs[0].id)
+            .eq('bot_id', user.bot_configs.id);
           
-          return {
-            ...user,
-            telegram_users_count: count || 0
-          }
+          telegram_users_count = count || 0;
         }
+        
         return {
           ...user,
-          telegram_users_count: 0
-        }
+          // Convertir bot_configs en tableau pour la cohérence avec l'interface
+          bot_configs: user.bot_configs ? [user.bot_configs] : [],
+          telegram_users_count
+        };
       })
-    )
+    );
 
     return new Response(
       JSON.stringify({ users: usersWithStats }),
