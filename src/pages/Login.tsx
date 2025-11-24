@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Loader2, Home } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { encryptPassword, decryptPassword } from "@/lib/encryption";
 import { login, register, authStorage } from "@/lib/auth";
 
 const Login = () => {
@@ -29,25 +28,12 @@ const Login = () => {
       return;
     }
 
-    // Load saved credentials if remember me was checked
-    const loadSavedCredentials = async () => {
-      const savedEmail = localStorage.getItem('rememberedEmail');
-      const savedEncryptedPassword = localStorage.getItem('rememberedPassword');
-      
-      if (savedEmail && savedEncryptedPassword) {
-        setEmail(savedEmail);
-        try {
-          const decryptedPassword = await decryptPassword(savedEncryptedPassword);
-          setPassword(decryptedPassword);
-          setRememberMe(true);
-        } catch (error) {
-          console.error('Failed to decrypt password:', error);
-          localStorage.removeItem('rememberedPassword');
-        }
-      }
-    };
-    
-    loadSavedCredentials();
+    // Load saved email if remember me was checked
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -57,18 +43,12 @@ const Login = () => {
     try {
       await login(email, password);
 
-      // Save or remove credentials based on remember me checkbox
+      // Save or remove email based on remember me checkbox
+      // SECURITY: Never store passwords, even encrypted
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
-        try {
-          const encryptedPassword = await encryptPassword(password);
-          localStorage.setItem('rememberedPassword', encryptedPassword);
-        } catch (error) {
-          console.error('Failed to encrypt password:', error);
-        }
       } else {
         localStorage.removeItem('rememberedEmail');
-        localStorage.removeItem('rememberedPassword');
       }
 
       toast({
