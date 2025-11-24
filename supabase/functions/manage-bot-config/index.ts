@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface SessionPayload {
+  user: {
+    id: string;
+  };
+  expires_at: number;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -13,50 +20,63 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const token = authHeader.replace('Bearer ', '');
+
+    let session: SessionPayload;
+    try {
+      session = JSON.parse(atob(token));
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Token invalide' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (session.expires_at < Date.now()) {
+      return new Response(
+        JSON.stringify({ error: 'Session expirée' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = session.user.id;
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-        auth: {
-          persistSession: false,
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Verify user is authenticated
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      console.error('Authentication error:', userError);
-      throw new Error('Unauthorized');
-    }
-
     const { action, botConfig } = await req.json();
-    console.log(`Processing action: ${action} for user: ${user.id}`);
+    console.log(`Processing action: ${action} for user: ${userId}`);
 
     if (action === 'create' || action === 'update') {
-      if (!botConfig.bot_token) {
-        throw new Error('Bot token is required');
-      }
-
-      // Encrypt the token
-      const encryptedToken = await encryptToken(botConfig.bot_token);
-
-      const configData = {
+      const baseData = {
         bot_name: botConfig.bot_name,
-        bot_token: encryptedToken,
-        admin_id: user.id,
+        admin_id: userId,
         is_active: botConfig.is_active ?? true,
       };
 
       let result;
+
       if (action === 'create') {
+        if (!botConfig.bot_token || typeof botConfig.bot_token !== 'string' || !botConfig.bot_token.trim()) {
+          throw new Error('Bot token is required');
+        }
+
+        const encryptedToken = await encryptToken(botConfig.bot_token);
+        const configData = {
+          ...baseData,
+          bot_token: encryptedToken,
+        };
+
         result = await supabaseClient
           .from('bot_configs')
           .insert(configData)
@@ -66,11 +86,19 @@ Deno.serve(async (req) => {
         if (!botConfig.id) {
           throw new Error('Bot ID is required for update');
         }
+
+        const updateData: Record<string, unknown> = { ...baseData };
+
+        if (typeof botConfig.bot_token === 'string' && botConfig.bot_token.trim() !== '') {
+          const encryptedToken = await encryptToken(botConfig.bot_token);
+          updateData.bot_token = encryptedToken;
+        }
+
         result = await supabaseClient
           .from('bot_configs')
-          .update(configData)
+          .update(updateData)
           .eq('id', botConfig.id)
-          .eq('admin_id', user.id)
+          .eq('admin_id', userId)
           .select()
           .single();
       }
@@ -96,7 +124,7 @@ Deno.serve(async (req) => {
         .from('bot_configs')
         .delete()
         .eq('id', botConfig.id)
-        .eq('admin_id', user.id);
+        .eq('admin_id', userId);
 
       if (error) {
         console.error('Delete error:', error);
@@ -114,11 +142,18 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in manage-bot-config:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const status =
+      errorMessage === 'Unauthorized' ||
+      errorMessage === 'Token invalide' ||
+      errorMessage === 'Session expirée'
+        ? 401
+        : 400;
+
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { 
-        status: errorMessage === 'Unauthorized' ? 401 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
