@@ -79,6 +79,17 @@ const Index = () => {
               </p>
             </CardContent>
           </Card>
+
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <CardTitle className="text-lg">LIENS EXTERNE</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Créer des boutons vers des liens externe avec ouverture via une mini-app ou normalement via le navigateur web
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* How it Works */}
