@@ -141,12 +141,6 @@ const Users = () => {
     });
   };
 
-  const getLastIpAddress = (ipString: string | null) => {
-    if (!ipString) return '—';
-    const ips = ipString.split(',').map(ip => ip.trim());
-    return ips[ips.length - 1];
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
@@ -248,7 +242,7 @@ const Users = () => {
                           </span>
                         </TableCell>
                         <TableCell className="font-mono text-xs text-muted-foreground">
-                          {getLastIpAddress(user.ip_address)}
+                          {user.ip_address || '—'}
                         </TableCell>
                         <TableCell className="text-sm">
                           {formatDate(user.first_interaction_at)}

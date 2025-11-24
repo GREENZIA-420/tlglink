@@ -94,8 +94,13 @@ async function recordUserInteraction(botId: string, message: TelegramMessage, re
   const isBot = message.from.is_bot || false;
 
   // Get IP and user agent from request headers
-  const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+  // Extract only the first (real client) IP from x-forwarded-for chain
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const ipAddress = forwardedFor 
+    ? forwardedFor.split(',')[0].trim() 
+    : (req.headers.get('x-real-ip') || 'unknown');
   const userAgent = req.headers.get('user-agent') || 'unknown';
+  
   
   // Determine platform from user agent
   let platform = 'unknown';
