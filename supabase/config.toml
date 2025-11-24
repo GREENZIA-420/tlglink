@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.manage-bot-settings]
 verify_jwt = false
+
+[functions.upload-welcome-image]
+verify_jwt = false

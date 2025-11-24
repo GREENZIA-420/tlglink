@@ -404,24 +404,29 @@ const Admin = () => {
 
       // Upload new image if selected
       if (welcomeImageFile) {
-        const fileExt = welcomeImageFile.name.split('.').pop();
-        const fileName = `welcome-${botId}-${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const token = btoa(JSON.stringify(session));
+        const formData = new FormData();
+        formData.append('file', welcomeImageFile);
+        formData.append('botId', botId);
 
-        const { error: uploadError } = await supabase.storage
-          .from('welcome-images')
-          .upload(filePath, welcomeImageFile, {
-            cacheControl: '3600',
-            upsert: true
-          });
+        const uploadResponse = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-welcome-image`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          }
+        );
 
-        if (uploadError) throw uploadError;
+        if (!uploadResponse.ok) {
+          const error = await uploadResponse.json();
+          throw new Error(error.error || 'Erreur lors de l\'upload de l\'image');
+        }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('welcome-images')
-          .getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
+        const { url } = await uploadResponse.json();
+        imageUrl = url;
       }
 
       const settingsToUpdate = [
