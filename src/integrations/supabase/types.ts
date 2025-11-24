@@ -258,6 +258,41 @@ export type Database = {
           },
         ]
       }
+      recovery_keys: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          recovery_key: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          recovery_key: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          recovery_key?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recovery_keys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_broadcasts: {
         Row: {
           admin_id: string

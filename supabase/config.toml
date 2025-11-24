@@ -59,3 +59,10 @@ verify_jwt = false
 
 [functions.manage-user-ban]
 verify_jwt = false
+
+[functions.generate-recovery-key]
+verify_jwt = false
+
+[functions.reset-password-with-key]
+verify_jwt = false
+

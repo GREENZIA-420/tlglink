@@ -202,6 +202,16 @@ const Login = () => {
                     "Se connecter"
                   )}
                 </Button>
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-muted-foreground"
+                    onClick={() => navigate('/recover-account')}
+                  >
+                    Mot de passe oublié ? Utilisez votre clé de récupération
+                  </Button>
+                </div>
               </form>
             </TabsContent>
             
