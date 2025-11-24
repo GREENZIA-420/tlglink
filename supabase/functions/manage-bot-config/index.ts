@@ -82,6 +82,27 @@ Deno.serve(async (req) => {
           .insert(configData)
           .select()
           .single();
+
+        if (result.error) {
+          console.error('Database error:', result.error);
+          throw result.error;
+        }
+
+        // Générer et mettre à jour le webhook_url avec le bot_id
+        const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-webhook?bot_id=${result.data.id}`;
+        const updateResult = await supabaseClient
+          .from('bot_configs')
+          .update({ webhook_url: webhookUrl })
+          .eq('id', result.data.id)
+          .select()
+          .single();
+
+        if (updateResult.error) {
+          console.error('Webhook URL update error:', updateResult.error);
+          throw updateResult.error;
+        }
+
+        result = updateResult;
       } else {
         if (!botConfig.id) {
           throw new Error('Bot ID is required for update');

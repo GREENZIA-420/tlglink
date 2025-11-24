@@ -128,15 +128,6 @@ const BotConfig = () => {
         throw new Error(data.error || 'Erreur lors de la sauvegarde de la configuration');
       }
 
-      // Update webhook URL with actual bot_id if new config
-      if (!botConfig && data.data) {
-        const actualWebhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook?bot_id=${data.data.id}`;
-        await supabase
-          .from('bot_configs')
-          .update({ webhook_url: actualWebhookUrl })
-          .eq('id', data.data.id);
-      }
-
       await loadBotConfig();
 
       toast({
