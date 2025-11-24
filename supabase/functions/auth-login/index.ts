@@ -55,15 +55,44 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Vérifier le mot de passe
+    // Vérifier le mot de passe avec le nouveau système (SHA-256)
     const passwordHash = hashPassword(password);
+    let isPasswordValid = user.password_hash === passwordHash;
+    let needsMigration = false;
     
-    if (user.password_hash !== passwordHash) {
+    // Si le mot de passe ne correspond pas avec SHA-256, essayer avec l'ancien système AES-GCM
+    if (!isPasswordValid) {
+      try {
+        // Importer la fonction de décryptage AES-GCM
+        const { encryptPassword } = await import('../_shared/encryption-password.ts');
+        const encryptedPassword = await encryptPassword(password);
+        
+        // Comparer avec le mot de passe chiffré stocké
+        if (user.password_hash === encryptedPassword) {
+          isPasswordValid = true;
+          needsMigration = true;
+          console.log('Password valid with old encryption, migration needed for:', email);
+        }
+      } catch (error) {
+        console.error('Error checking old password format:', error);
+      }
+    }
+    
+    if (!isPasswordValid) {
       console.error('Invalid password for:', email);
       return new Response(
         JSON.stringify({ error: 'Email ou mot de passe incorrect' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
+    }
+    
+    // Si le mot de passe nécessite une migration, le mettre à jour avec le nouveau hash
+    if (needsMigration) {
+      await supabaseClient
+        .from('users')
+        .update({ password_hash: passwordHash })
+        .eq('id', user.id);
+      console.log('Password migrated to new hash format for:', email);
     }
 
     // Mettre à jour last_login_at
