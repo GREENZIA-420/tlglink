@@ -1432,25 +1432,26 @@ const Admin = () => {
           <TabsContent value="broadcast" className="space-y-4 md:space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4">
                   <div>
-                    <CardTitle>Message de Publicité</CardTitle>
-                    <CardDescription>
-                      Envoyez un message à tous les utilisateurs qui ont utilisé le bot
+                    <CardTitle className="text-lg sm:text-xl">Message de Publicité</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm mt-1">
+                      Envoyez un message à tous les utilisateurs
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setShowDrafts(!showDrafts)}
+                      className="w-full sm:w-auto justify-start sm:justify-center"
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       Brouillons ({drafts.length})
                     </Button>
                     <Dialog open={showSaveDraftDialog} onOpenChange={setShowSaveDraftDialog}>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto justify-start sm:justify-center">
                           <Save className="h-4 w-4 mr-2" />
                           Sauvegarder
                         </Button>
@@ -1535,10 +1536,10 @@ const Admin = () => {
 
                 <Card className="border-telegram/20">
                   <CardHeader>
-                    <CardTitle className="text-sm">Formatage HTML Telegram</CardTitle>
+                    <CardTitle className="text-sm sm:text-base">Formatage HTML Telegram</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-1 text-sm font-mono">
+                    <div className="bg-muted/50 p-3 sm:p-4 rounded-lg space-y-1 text-xs sm:text-sm font-mono overflow-x-auto">
                       <div><code className="text-telegram">&lt;b&gt;</code>gras<code className="text-telegram">&lt;/b&gt;</code></div>
                       <div><code className="text-telegram">&lt;i&gt;</code>italique<code className="text-telegram">&lt;/i&gt;</code></div>
                       <div><code className="text-telegram">&lt;u&gt;</code>souligné<code className="text-telegram">&lt;/u&gt;</code></div>
@@ -1549,15 +1550,15 @@ const Admin = () => {
                 </Card>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-primary" />
-                      <div>
-                        <Label htmlFor="schedule-mode" className="text-sm font-medium">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 p-3 sm:p-4 border rounded-lg">
+                    <div className="flex items-start sm:items-center gap-3">
+                      <Clock className="h-5 w-5 text-primary flex-shrink-0 mt-0.5 sm:mt-0" />
+                      <div className="flex-1 min-w-0">
+                        <Label htmlFor="schedule-mode" className="text-sm font-medium block">
                           Planifier l'envoi
                         </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Programmer l'envoi pour une date et heure précises
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Programmer l'envoi
                         </p>
                       </div>
                     </div>
@@ -1565,6 +1566,7 @@ const Admin = () => {
                       id="schedule-mode"
                       checked={isScheduled}
                       onCheckedChange={setIsScheduled}
+                      className="self-end sm:self-auto"
                     />
                   </div>
 
@@ -1638,8 +1640,8 @@ const Admin = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Images/Vidéos (optionnel)</Label>
-                  <div className="space-y-2">
+                  <Label className="text-sm sm:text-base">Images/Vidéos (optionnel)</Label>
+                  <div className="space-y-3">
                     {broadcastMediaFiles.length > 0 && (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {broadcastMediaFiles.map((file, index) => (
@@ -1658,7 +1660,7 @@ const Admin = () => {
                             <Button
                               size="icon"
                               variant="destructive"
-                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-1 right-1 h-6 w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                               onClick={() => removeBroadcastMedia(index)}
                             >
                               <X className="h-3 w-3" />
@@ -1667,53 +1669,54 @@ const Admin = () => {
                         ))}
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <Input
                         type="file"
                         accept="image/*,video/*"
                         multiple
                         onChange={handleBroadcastMediaUpload}
-                        className="max-w-xs"
+                        className="hidden"
                         id="broadcast-media"
                       />
-                      <Label htmlFor="broadcast-media" className="cursor-pointer">
-                        <Button variant="outline" asChild>
+                      <Label htmlFor="broadcast-media" className="cursor-pointer w-full sm:w-auto">
+                        <Button variant="outline" className="w-full sm:w-auto" asChild>
                           <span>
                             <Upload className="h-4 w-4 mr-2" />
-                            Ajouter des médias
+                            <span className="hidden sm:inline">Ajouter des médias</span>
+                            <span className="sm:hidden">Ajouter média</span>
                           </span>
                         </Button>
                       </Label>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Maximum 10 fichiers. Formats: images (JPG, PNG, etc.) et vidéos. Les médias seront envoyés groupés avec le message.
+                      Maximum 10 fichiers. Images et vidéos acceptées.
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Boutons à inclure (optionnel)</Label>
+                  <Label className="text-sm sm:text-base">Boutons à inclure (optionnel)</Label>
                   <div className="space-y-2">
                     {buttons.filter(b => b.is_active).length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Aucun bouton actif disponible. Créez des boutons dans l'onglet "Boutons".
+                      <p className="text-xs sm:text-sm text-muted-foreground p-3 border rounded-lg bg-muted/30">
+                        Aucun bouton actif. Créez-en dans l'onglet "Boutons".
                       </p>
                     ) : (
                       <div className="space-y-2">
                         {buttons.filter(b => b.is_active).map((button) => (
                           <div
                             key={button.id}
-                            className="flex items-center space-x-2 p-2 border rounded hover:bg-muted/50 cursor-pointer"
+                            className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                             onClick={() => toggleBroadcastButton(button.id)}
                           >
                             <input
                               type="checkbox"
                               checked={selectedBroadcastButtons.includes(button.id)}
                               onChange={() => toggleBroadcastButton(button.id)}
-                              className="h-4 w-4"
+                              className="h-4 w-4 mt-0.5 sm:mt-0 flex-shrink-0"
                             />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium">{button.label}</p>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{button.label}</p>
                               <p className="text-xs text-muted-foreground">
                                 {button.type === "telegram_invite" ? "Invitation Telegram" :
                                  button.type === "miniapp" ? "Mini App" : "Lien externe"}
@@ -1724,7 +1727,7 @@ const Admin = () => {
                       </div>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      Les boutons sélectionnés seront affichés sous le message d'annonce.
+                      Boutons affichés sous le message
                     </p>
                   </div>
                 </div>
@@ -1732,24 +1735,26 @@ const Admin = () => {
                 <Button
                   onClick={handleSendBroadcast}
                   disabled={isSendingBroadcast || !broadcastMessage.trim()}
-                  className="w-full bg-telegram hover:bg-telegram-dark"
+                  className="w-full bg-telegram hover:bg-telegram-dark text-sm sm:text-base py-5 sm:py-6"
                 >
                   {isSendingBroadcast ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Envoi en cours...
+                      <span className="hidden sm:inline">Envoi en cours...</span>
+                      <span className="sm:hidden">Envoi...</span>
                     </>
                   ) : (
                     <>
                       <Send className="mr-2 h-4 w-4" />
-                      Envoyer à tous les utilisateurs
+                      <span className="hidden sm:inline">Envoyer à tous les utilisateurs</span>
+                      <span className="sm:hidden">Envoyer à tous</span>
                     </>
                   )}
                 </Button>
 
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">
-                    ⚠️ Le message sera envoyé à tous les utilisateurs ayant utilisé la commande /start de votre bot.
+                <div className="p-3 sm:p-4 bg-muted/50 rounded-lg border border-muted">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    ⚠️ Message envoyé à tous les utilisateurs ayant utilisé /start
                   </p>
                 </div>
               </CardContent>
