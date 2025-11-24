@@ -30,6 +30,13 @@ export const authStorage = {
         return null;
       }
       
+      // Migration: vérifier le format du token JWT (doit avoir 3 parties: header.payload.signature)
+      if (!session.access_token || session.access_token.split('.').length !== 3) {
+        console.warn('Ancien format de token détecté, déconnexion automatique...');
+        this.clearSession();
+        return null;
+      }
+      
       return session;
     } catch {
       return null;
