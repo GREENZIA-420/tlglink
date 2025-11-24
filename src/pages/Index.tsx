@@ -16,7 +16,7 @@ const Index = () => {
             <Shield className="w-10 h-10 text-telegram" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-foreground">
-            Bot Telegram CAPTCHA
+            LINKY BOT CREATOR
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Protection automatique avec codes de vérification temporisés
