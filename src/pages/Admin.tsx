@@ -89,14 +89,12 @@ const Admin = () => {
       }
 
       // Load bot config first
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-bot-config`,
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -134,7 +132,7 @@ const Admin = () => {
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -164,7 +162,7 @@ const Admin = () => {
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -192,14 +190,12 @@ const Admin = () => {
       const session = authStorage.getSession();
       if (!session) return;
 
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-broadcast-drafts`,
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -242,8 +238,6 @@ const Admin = () => {
         return;
       }
 
-      const token = btoa(JSON.stringify(session));
-
       const draftData = {
         bot_id: botConfig.id,
         title: draftTitle,
@@ -260,7 +254,7 @@ const Admin = () => {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -314,14 +308,12 @@ const Admin = () => {
       const session = authStorage.getSession();
       if (!session) return;
 
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-broadcast-draft`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -398,7 +390,6 @@ const Admin = () => {
 
       // Upload new image if selected
       if (welcomeImageFile) {
-        const token = btoa(JSON.stringify(session));
         const formData = new FormData();
         formData.append('file', welcomeImageFile);
         formData.append('botId', botId);
@@ -408,7 +399,7 @@ const Admin = () => {
           {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${session.access_token}`,
             },
             body: formData,
           }
@@ -429,14 +420,12 @@ const Admin = () => {
         { key: 'welcome_image_url', value: imageUrl },
       ];
 
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-settings`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -589,13 +578,12 @@ const Admin = () => {
         const draftTitle = `Envoyé le ${format(new Date(), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`;
         
         try {
-          const token = btoa(JSON.stringify(session));
           await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-broadcast-draft`,
             {
               method: 'POST',
               headers: {
-                Authorization: `Bearer ${token}`,
+                Authorization: `Bearer ${session.access_token}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
@@ -731,14 +719,12 @@ const Admin = () => {
         return;
       }
 
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-buttons`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -794,14 +780,12 @@ const Admin = () => {
         return;
       }
 
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-buttons`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -840,14 +824,12 @@ const Admin = () => {
         return;
       }
 
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-buttons`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -937,14 +919,12 @@ const Admin = () => {
         return;
       }
 
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-buttons`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -973,7 +953,7 @@ const Admin = () => {
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
         }

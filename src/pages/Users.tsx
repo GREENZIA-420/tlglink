@@ -58,15 +58,13 @@ const Users = () => {
         return;
       }
 
-      const token = btoa(JSON.stringify(session));
-
       // Charger les utilisateurs via l'edge function (vérifie que l'utilisateur est bien créateur du bot)
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-telegram-users`,
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -140,14 +138,12 @@ const Users = () => {
         return;
       }
 
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-telegram-user`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

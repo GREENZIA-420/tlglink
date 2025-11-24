@@ -74,7 +74,6 @@ const SuperAdmin = () => {
       }
 
       const userId = session.user.id;
-      const token = btoa(JSON.stringify(session));
 
       // Vérifier l'accès super admin via edge function
       // Note: On doit vérifier manuellement car le système utilise une auth custom
@@ -83,7 +82,7 @@ const SuperAdmin = () => {
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -167,14 +166,12 @@ const SuperAdmin = () => {
         return;
       }
 
-      const token = btoa(JSON.stringify(session));
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-user-ban`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

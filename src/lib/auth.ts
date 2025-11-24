@@ -106,3 +106,10 @@ export function logout(): void {
   authStorage.clearSession();
   window.location.href = '/login';
 }
+
+// Helper pour obtenir le header d'autorisation
+export function getAuthHeader(): string | null {
+  const session = authStorage.getSession();
+  if (!session?.access_token) return null;
+  return `Bearer ${session.access_token}`;
+}
