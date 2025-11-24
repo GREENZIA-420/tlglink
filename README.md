@@ -113,9 +113,11 @@ Le projet utilise les secrets suivants (configurés automatiquement) :
 
 **Démarrez en 1 clic avec votre propre copie du projet :**
 
-[![Remix on Lovable](https://lovable.dev/remix-button.svg)](https://lovable.dev/projects/b21b7408-a903-4b62-9dc2-f44385cbd306/remix)
+🔗 **[Cliquez ici pour remixer ce projet sur Lovable](https://lovable.dev/projects/b21b7408-a903-4b62-9dc2-f44385cbd306)**
 
-En cliquant sur "Remix", vous obtiendrez :
+Une fois sur la page du projet, cliquez sur le bouton **"Remix"** pour créer votre propre copie.
+
+En remixant ce projet, vous obtiendrez :
 - ✅ Une copie complète du code source
 - ✅ Votre propre base de données Lovable Cloud (vierge)
 - ✅ Tous les secrets automatiquement configurés
