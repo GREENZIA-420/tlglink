@@ -400,6 +400,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Vérifier si le bot est actif
+    if (!botConfig.is_active) {
+      console.log('Bot is disabled:', botId);
+      return new Response('OK', {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const encryptedBotToken = botConfig.bot_token;
     
     // Decrypt the bot token
