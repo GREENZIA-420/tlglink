@@ -980,29 +980,6 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="messages" className="space-y-6">
-            <Card className="border-telegram/20">
-              <CardHeader>
-                <CardTitle>Formatage HTML Telegram</CardTitle>
-                <CardDescription>
-                  Balises supportées par Telegram
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="bg-muted/50 p-4 rounded-lg space-y-1 text-sm font-mono">
-                  <div><code className="text-telegram">&lt;b&gt;</code>gras<code className="text-telegram">&lt;/b&gt;</code> ou <code className="text-telegram">&lt;strong&gt;</code></div>
-                  <div><code className="text-telegram">&lt;i&gt;</code>italique<code className="text-telegram">&lt;/i&gt;</code> ou <code className="text-telegram">&lt;em&gt;</code></div>
-                  <div><code className="text-telegram">&lt;u&gt;</code>souligné<code className="text-telegram">&lt;/u&gt;</code></div>
-                  <div><code className="text-telegram">&lt;s&gt;</code>barré<code className="text-telegram">&lt;/s&gt;</code></div>
-                  <div><code className="text-telegram">&lt;code&gt;</code>code<code className="text-telegram">&lt;/code&gt;</code></div>
-                  <div><code className="text-telegram">&lt;pre&gt;</code>bloc de code<code className="text-telegram">&lt;/pre&gt;</code></div>
-                  <div><code className="text-telegram">&lt;a href="URL"&gt;</code>lien<code className="text-telegram">&lt;/a&gt;</code></div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  ⚠️ Utilisez uniquement ces balises HTML. Les autres ne seront pas formatées correctement.
-                </p>
-              </CardContent>
-            </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Message CAPTCHA</CardTitle>
@@ -1533,21 +1510,6 @@ const Admin = () => {
                     </CardContent>
                   </Card>
                 )}
-
-                <Card className="border-telegram/20">
-                  <CardHeader>
-                    <CardTitle className="text-sm sm:text-base">Formatage HTML Telegram</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="bg-muted/50 p-3 sm:p-4 rounded-lg space-y-1 text-xs sm:text-sm font-mono overflow-x-auto">
-                      <div><code className="text-telegram">&lt;b&gt;</code>gras<code className="text-telegram">&lt;/b&gt;</code></div>
-                      <div><code className="text-telegram">&lt;i&gt;</code>italique<code className="text-telegram">&lt;/i&gt;</code></div>
-                      <div><code className="text-telegram">&lt;u&gt;</code>souligné<code className="text-telegram">&lt;/u&gt;</code></div>
-                      <div><code className="text-telegram">&lt;code&gt;</code>code<code className="text-telegram">&lt;/code&gt;</code></div>
-                      <div><code className="text-telegram">&lt;a href="URL"&gt;</code>lien<code className="text-telegram">&lt;/a&gt;</code></div>
-                    </div>
-                  </CardContent>
-                </Card>
 
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 p-3 sm:p-4 border rounded-lg">
