@@ -353,16 +353,14 @@ const Admin = () => {
 
   const handleLogout = async () => {
     try {
-      // Clear saved credentials
-      localStorage.removeItem('rememberedEmail');
-      localStorage.removeItem('rememberedPassword');
+      // Note: On ne supprime PAS rememberedEmail pour respecter "Se souvenir de moi"
+      // L'utilisateur peut toujours le supprimer en décochant l'option lors de la prochaine connexion
       
       // Logout
       logout();
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if there's an error, clear local data and redirect
-      localStorage.clear();
+      // Even if there's an error, redirect
       navigate("/login");
     }
   };
