@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Copy, Check, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Copy, Check, Send, Loader2, Key, AlertTriangle } from "lucide-react";
 import { authStorage } from "@/lib/auth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const BotConfig = () => {
   const [botConfig, setBotConfig] = useState<any>(null);
@@ -19,6 +20,9 @@ const BotConfig = () => {
   const [copied, setCopied] = useState(false);
   const [tokenChanged, setTokenChanged] = useState(false);
   const [clearToken, setClearToken] = useState(""); // Pour garder le token en clair temporairement
+  const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
+  const [isGeneratingKey, setIsGeneratingKey] = useState(false);
+  const [keyRevealed, setKeyRevealed] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -211,6 +215,63 @@ const BotConfig = () => {
     }
   };
 
+  const handleGenerateRecoveryKey = async () => {
+    setIsGeneratingKey(true);
+    try {
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+
+      const token = btoa(JSON.stringify(session));
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-recovery-key`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Erreur lors de la génération de la clé');
+      }
+
+      setRecoveryKey(data.recovery_key);
+      setKeyRevealed(true);
+      
+      toast({
+        title: "✅ Clé générée",
+        description: "Veuillez sauvegarder cette clé dans un lieu sûr. Elle ne sera plus affichée.",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer la clé de récupération.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingKey(false);
+    }
+  };
+
+  const copyRecoveryKey = () => {
+    if (recoveryKey) {
+      navigator.clipboard.writeText(recoveryKey);
+      toast({
+        title: "Copié",
+        description: "Clé de récupération copiée dans le presse-papier.",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
@@ -349,6 +410,91 @@ const BotConfig = () => {
             >
               {isSaving ? "Sauvegarde..." : "Enregistrer la configuration"}
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 shadow-xl mt-6">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-primary" />
+              <CardTitle>Clé de Récupération</CardTitle>
+            </div>
+            <CardDescription>
+              Générez une clé pour récupérer l'accès à votre compte en cas d'oubli du mot de passe
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Important :</strong> Cette clé vous permettra de réinitialiser votre mot de passe. 
+                Conservez-la dans un lieu sûr (gestionnaire de mots de passe, coffre-fort numérique). 
+                Une fois générée, vous ne pourrez plus la consulter.
+              </AlertDescription>
+            </Alert>
+
+            {keyRevealed && recoveryKey ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-muted rounded-lg border-2 border-primary/20">
+                  <p className="text-xs text-muted-foreground mb-2">Votre clé de récupération :</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-lg font-mono font-bold text-primary break-all">
+                      {recoveryKey}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={copyRecoveryKey}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Cette clé ne sera plus affichée après avoir quitté cette page. Assurez-vous de l'avoir sauvegardée !
+                  </AlertDescription>
+                </Alert>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setKeyRevealed(false);
+                    setRecoveryKey(null);
+                  }}
+                  className="w-full"
+                >
+                  J'ai sauvegardé ma clé
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  {recoveryKey 
+                    ? "Une clé de récupération existe déjà pour votre compte. Générer une nouvelle clé désactivera l'ancienne."
+                    : "Vous n'avez pas encore de clé de récupération. Générez-en une pour sécuriser votre compte."
+                  }
+                </p>
+                <Button
+                  onClick={handleGenerateRecoveryKey}
+                  disabled={isGeneratingKey}
+                  className="w-full"
+                  variant="outline"
+                >
+                  {isGeneratingKey ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="mr-2 h-4 w-4" />
+                      {recoveryKey ? "Générer une nouvelle clé" : "Générer une clé de récupération"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

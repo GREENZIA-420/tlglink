@@ -9,6 +9,7 @@ import Admin from "./pages/Admin";
 import Users from "./pages/Users";
 import BotConfig from "./pages/BotConfig";
 import SuperAdmin from "./pages/SuperAdmin";
+import RecoverAccount from "./pages/RecoverAccount";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/recover-account" element={<RecoverAccount />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/users" element={<Users />} />
           <Route path="/admin/bot-config" element={<BotConfig />} />
