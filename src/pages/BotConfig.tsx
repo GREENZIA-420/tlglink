@@ -30,15 +30,25 @@ const BotConfig = () => {
         return;
       }
 
-      const userId = session.user.id;
+      // Créer un token encodé pour l'edge function
+      const token = btoa(JSON.stringify(session));
 
-      const { data: config, error: configError } = await supabase
-        .from('bot_configs')
-        .select('*')
-        .eq('admin_id', userId)
-        .maybeSingle();
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-bot-config`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      if (configError) throw configError;
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération de la configuration');
+      }
+
+      const { config } = await response.json();
 
       if (config) {
         setBotConfig(config);
