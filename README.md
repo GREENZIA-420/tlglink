@@ -1,361 +1,299 @@
-# Plateforme de Gestion de Bots Telegram
+# 🤖 Plateforme de Gestion de Bots Telegram
 
-Une application web complète pour créer, gérer et administrer des bots Telegram avec une interface intuitive.
+Une application web complète pour créer, gérer et administrer vos bots Telegram avec une interface intuitive.
 
-## 🚀 Fonctionnalités
+## ✨ Fonctionnalités Principales
 
-- **Gestion Multi-Bots** : Créez et gérez plusieurs bots Telegram depuis une seule interface
-- **Authentification Sécurisée** : Système d'authentification avec rôles (Admin, Super Admin)
-- **Configuration des Bots** : Personnalisez les messages de bienvenue, boutons et paramètres
-- **Gestion des Utilisateurs** : Visualisez et gérez les utilisateurs Telegram qui interagissent avec vos bots
-- **Système de Bannissement** : Bannissez des utilisateurs et désactivez leurs bots
-- **Diffusion de Messages** : Envoyez des messages programmés à vos utilisateurs
-- **Récupération de Compte** : Système de clés de récupération pour réinitialiser les mots de passe
+- 🤖 **Gestion Multi-Bots** - Créez et gérez plusieurs bots depuis une interface unique
+- 🔐 **Authentification Sécurisée** - Système de rôles (Admin, Super Admin)
+- ⚙️ **Configuration Complète** - Messages de bienvenue, boutons personnalisés, paramètres
+- 👥 **Gestion Utilisateurs** - Visualisez et gérez vos utilisateurs Telegram
+- 🚫 **Contrôle d'Accès** - Bannissement d'utilisateurs et désactivation de bots
+- 📢 **Diffusion Messages** - Envoi de messages programmés à vos abonnés
+- 🔑 **Récupération Compte** - Système de clés de récupération sécurisé
 
-## 🛠️ Technologies Utilisées
+## 🚀 Déploiement Rapide
 
-- **Frontend** : React 18, TypeScript, Vite
-- **UI/UX** : Tailwind CSS, shadcn/ui, Lucide React
-- **Backend** : Lovable Cloud (Supabase)
-- **Base de données** : PostgreSQL (via Supabase)
-- **Fonctions Serverless** : Edge Functions
-- **Authentification** : Système personnalisé avec JWT
-- **Gestion d'état** : TanStack Query
+### Option 1️⃣ : Remix Lovable (⚡ En 30 secondes)
 
-## 📋 Prérequis
+**La méthode la plus rapide pour démarrer :**
 
-Avant de commencer, assurez-vous d'avoir :
+1. 🔗 **[Cliquez ici pour voir le projet](https://lovable.dev/projects/b21b7408-a903-4b62-9dc2-f44385cbd306)**
+2. Cliquez sur le bouton **"Remix"**
+3. Votre copie se crée automatiquement avec :
+   - ✅ Base de données vierge
+   - ✅ Secrets configurés
+   - ✅ Prêt à utiliser immédiatement
 
-- Node.js (version 18 ou supérieure) - [Installer avec nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-- npm ou bun
-- Un compte Lovable (pour le déploiement)
-- Un bot Telegram (créé via [@BotFather](https://t.me/botfather))
+> **Note** : Le remix crée un environnement totalement isolé. Vos données restent privées.
 
-## 🔧 Installation Locale
+---
 
-### 1. Cloner le projet
+### Option 2️⃣ : Clone Git + Lovable (🔧 ~5 minutes)
+
+**Pour les développeurs qui veulent modifier le code localement :**
 
 ```bash
-# Clonez le dépôt
+# 1. Cloner le projet
 git clone <VOTRE_URL_GIT>
-
-# Accédez au répertoire
 cd <NOM_DU_PROJET>
-```
 
-### 2. Installer les dépendances
-
-```bash
+# 2. Installer les dépendances
 npm install
-# ou
-bun install
-```
 
-### 3. Configuration de l'environnement
-
-Le fichier `.env` est automatiquement généré par Lovable Cloud. Il contient :
-
-```env
-VITE_SUPABASE_PROJECT_ID="votre_project_id"
-VITE_SUPABASE_PUBLISHABLE_KEY="votre_anon_key"
-VITE_SUPABASE_URL="https://votre-projet.supabase.co"
-```
-
-**Important** : Ne modifiez jamais ce fichier manuellement.
-
-### 4. Lancer le serveur de développement
-
-```bash
+# 3. Lancer en développement local
 npm run dev
 ```
 
-L'application sera accessible sur `http://localhost:8080`
+**Puis pour déployer :**
+1. Créez un compte sur [Lovable](https://lovable.dev)
+2. Créez un nouveau projet et importez votre code
+3. Cliquez sur **"Publish"** → Déployé ! 🎉
 
-## 🗄️ Configuration de la Base de Données
+**Configuration domaine personnalisé :**
+- Allez dans `Project → Settings → Domains`
+- Cliquez sur "Connect Domain"
+- _(Nécessite un plan payant)_
 
-### Structure de la Base de Données
+---
 
-Le projet utilise plusieurs tables principales :
+### Option 3️⃣ : Auto-hébergement (⚙️ Avancé)
 
-- **users** : Comptes administrateurs
-- **bot_configs** : Configuration des bots Telegram
-- **bot_settings** : Paramètres personnalisables des bots
-- **bot_buttons** : Boutons de navigation des bots
-- **telegram_users** : Utilisateurs Telegram qui interagissent avec les bots
-- **broadcast_drafts** : Brouillons de messages de diffusion
-- **scheduled_broadcasts** : Messages programmés
-- **recovery_keys** : Clés de récupération de compte
-- **captcha_codes** : Codes de vérification
-
-### Migrations
-
-Les migrations sont gérées automatiquement par Lovable Cloud. Elles se trouvent dans :
-
-```
-supabase/migrations/
-```
-
-**Ne modifiez pas ces fichiers manuellement**. Utilisez l'interface Lovable pour les changements de schéma.
-
-### Secrets Supabase
-
-Le projet utilise les secrets suivants (configurés automatiquement) :
-
-- `ENCRYPTION_SALT` : Pour le chiffrement des tokens
-- `SUPABASE_URL` : URL du projet Supabase
-- `SUPABASE_ANON_KEY` : Clé anonyme publique
-- `SUPABASE_SERVICE_ROLE_KEY` : Clé de service (privée)
-- `SUPABASE_DB_URL` : URL de connexion à la base de données
-
-## 🚀 Déploiement
-
-### Option 1 : Remix sur Lovable (Le plus Simple) ⚡
-
-**Démarrez en 1 clic avec votre propre copie du projet :**
-
-🔗 **[Cliquez ici pour remixer ce projet sur Lovable](https://lovable.dev/projects/b21b7408-a903-4b62-9dc2-f44385cbd306)**
-
-Une fois sur la page du projet, cliquez sur le bouton **"Remix"** pour créer votre propre copie.
-
-En remixant ce projet, vous obtiendrez :
-- ✅ Une copie complète du code source
-- ✅ Votre propre base de données Lovable Cloud (vierge)
-- ✅ Tous les secrets automatiquement configurés
-- ✅ Un environnement prêt à l'emploi en quelques secondes
-
-**Important** : Le remix crée un projet totalement indépendant. Vous aurez votre propre base de données vide, vos propres secrets, et aucune connexion avec le projet d'origine.
-
-### Option 2 : Déploiement sur Lovable (Si vous avez cloné le code)
-
-1. **Créez un compte Lovable** : [https://lovable.dev](https://lovable.dev)
-
-2. **Créez un nouveau projet** :
-   - Importez votre code source cloné
-   - Lovable Cloud se configurera automatiquement
-
-3. **Publiez votre application** :
-   - Cliquez sur le bouton **"Publish"** en haut à droite
-   - Votre application frontend sera déployée automatiquement
-   - Les Edge Functions sont déployées automatiquement à chaque modification
-
-4. **Configuration du domaine** (optionnel) :
-   - Allez dans `Project → Settings → Domains`
-   - Cliquez sur "Connect Domain"
-   - Suivez les instructions pour votre domaine personnalisé
-   - Note : Un plan payant est requis pour les domaines personnalisés
-
-### Différence Frontend/Backend
-
-- **Changements Frontend** : Nécessitent de cliquer sur "Update" dans le dialogue de publication
-- **Changements Backend** : Se déploient automatiquement et immédiatement (Edge Functions, migrations)
-
-### Option 3 : Auto-hébergement
-
-Si vous souhaitez héberger l'application ailleurs :
-
-1. **Build de production** :
+**Pour héberger sur votre propre infrastructure :**
 
 ```bash
+# Build de production
 npm run build
 ```
 
-Les fichiers seront générés dans le dossier `dist/`
+Le dossier `dist/` contient votre application prête à déployer sur :
+- Vercel
+- Netlify  
+- Cloudflare Pages
+- Votre serveur
 
-2. **Déployez** sur votre plateforme préférée :
-   - Vercel
-   - Netlify
-   - Cloudflare Pages
-   - Votre propre serveur
+**⚠️ Configuration requise :**
+1. Copiez les variables d'environnement depuis `.env`
+2. Configurez-les dans votre plateforme d'hébergement
+3. Assurez-vous que votre backend Supabase est accessible
 
-3. **Variables d'environnement** :
-   - Copiez les variables depuis `.env`
-   - Configurez-les dans votre plateforme d'hébergement
+---
 
-## 🤖 Configuration d'un Bot Telegram
+## 📋 Prérequis
 
-### 1. Créer un bot avec BotFather
+- Node.js 18+ - [Installer avec nvm](https://github.com/nvm-sh/nvm)
+- Un bot Telegram - [Créer via @BotFather](https://t.me/botfather)
+- (Optionnel) Compte Lovable pour le déploiement cloud
 
-1. Ouvrez Telegram et recherchez [@BotFather](https://t.me/botfather)
+## 🛠️ Technologies
+
+| Frontend | Backend | UI/UX |
+|----------|---------|-------|
+| React 18 | Lovable Cloud (Supabase) | Tailwind CSS |
+| TypeScript | Edge Functions | shadcn/ui |
+| Vite | PostgreSQL | Lucide Icons |
+| TanStack Query | JWT Auth | Framer Motion |
+
+## 🤖 Configurer Votre Bot Telegram
+
+### 1. Créer le bot
+
+1. Ouvrez Telegram → [@BotFather](https://t.me/botfather)
 2. Envoyez `/newbot`
-3. Suivez les instructions pour nommer votre bot
-4. Copiez le **token** fourni (format : `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+3. Suivez les instructions
+4. **Copiez le token** (ex: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
 
-### 2. Configurer le Webhook
+### 2. Connecter à l'application
 
 1. Connectez-vous à votre application
 2. Allez dans **Admin → Configuration Bot**
-3. Ajoutez votre token de bot
-4. Le webhook sera automatiquement configuré vers :
-   ```
-   https://mnvwjgpideueuwvtohjo.supabase.co/functions/v1/telegram-webhook?botId=VOTRE_BOT_ID
-   ```
+3. Collez votre token de bot
+4. Le webhook se configure automatiquement ✅
 
-### 3. Personnaliser votre bot
+### 3. Personnaliser
 
-- **Message de bienvenue** : Avec texte et image
-- **Boutons** : Ajoutez des liens, invitations de groupe, ou mini-apps
-- **Paramètres** : Configurez les options spécifiques
+- ✏️ Message de bienvenue (texte + image)
+- 🔘 Boutons personnalisés (liens, groupes, mini-apps)
+- ⚙️ Paramètres avancés
 
 ## 👥 Utilisation
 
 ### Première Connexion
 
 1. Accédez à `/login`
-2. Si aucun compte n'existe, vous serez redirigé vers la création du premier Super Admin
-3. Créez votre compte avec :
-   - Email
-   - Mot de passe
-   - Nom complet
+2. Si aucun compte existe → Création du Super Admin
+3. Remplissez : Email, Mot de passe, Nom complet
 
-### Gestion des Utilisateurs
+### Pages Principales
 
-- **Page Utilisateurs** : `/admin/users`
-  - Voir tous les utilisateurs Telegram
-  - Bannir/débannir des utilisateurs
-  - Statistiques d'interaction
-
-### Gestion des Bots
-
-- **Page Configuration** : `/admin/bot-config`
-  - Créer/modifier le bot
-  - Gérer les boutons
-  - Personnaliser les messages
-  - Upload d'images de bienvenue
-
-### Super Admin
-
-- **Page Super Admin** : `/admin/super-admin`
-  - Voir tous les comptes administrateurs
-  - Gérer les rôles
-  - Bannir des comptes admin
-  - Générer des clés de récupération
+| Page | Route | Description |
+|------|-------|-------------|
+| 🏠 Accueil | `/` | Page d'accueil publique |
+| 🔑 Connexion | `/login` | Authentification |
+| 📊 Dashboard | `/admin` | Tableau de bord admin |
+| 👥 Utilisateurs | `/admin/users` | Gestion utilisateurs Telegram |
+| 🤖 Configuration Bot | `/admin/bot-config` | Configuration du bot |
+| 👑 Super Admin | `/admin/super-admin` | Gestion des admins |
+| 🔓 Récupération | `/recover-account` | Réinitialisation mot de passe |
 
 ## 🔐 Sécurité
 
-### Tokens Chiffrés
+### Protection des Données
 
-Tous les tokens de bot Telegram sont chiffrés dans la base de données avec un salt unique.
-
-### Authentification
-
-- Mots de passe hashés avec algorithme sécurisé
+✅ **Ce qui est sécurisé :**
+- Tokens de bot chiffrés dans la base de données
+- Mots de passe hashés
+- Secrets Supabase stockés séparément
+- Politiques RLS sur toutes les tables
 - Sessions JWT avec expiration
-- Option "Se souvenir de moi" pour la connexion
+
+✅ **Sans danger pour GitHub public :**
+- Code source
+- Variables `VITE_*` (publiques par design)
+- Structure de la base de données
+
+❌ **Jamais exposé :**
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ENCRYPTION_SALT`
+- Tokens de bot non chiffrés
+- Mots de passe
 
 ### Récupération de Compte
 
 Si vous perdez votre mot de passe :
-
-1. Un Super Admin peut générer une clé de récupération
-2. Accédez à `/recover-account`
-3. Utilisez la clé de récupération pour réinitialiser votre mot de passe
+1. Un Super Admin génère une clé de récupération
+2. Allez sur `/recover-account`
+3. Utilisez la clé pour créer un nouveau mot de passe
 
 ## 📁 Structure du Projet
 
 ```
 .
 ├── src/
-│   ├── components/       # Composants React réutilisables
-│   │   ├── ui/          # Composants UI (shadcn)
-│   │   └── NavLink.tsx
-│   ├── pages/           # Pages de l'application
-│   │   ├── Index.tsx    # Page d'accueil
-│   │   ├── Login.tsx    # Authentification
-│   │   ├── Admin.tsx    # Dashboard admin
-│   │   ├── Users.tsx    # Gestion utilisateurs
-│   │   ├── BotConfig.tsx    # Configuration bot
-│   │   ├── SuperAdmin.tsx   # Panneau super admin
-│   │   └── RecoverAccount.tsx
-│   ├── integrations/
-│   │   └── supabase/    # Client et types Supabase
-│   ├── lib/             # Utilitaires
-│   └── hooks/           # Hooks React personnalisés
+│   ├── components/          # Composants réutilisables
+│   │   └── ui/             # Composants shadcn/ui
+│   ├── pages/              # Pages de l'application
+│   │   ├── Index.tsx       # Accueil
+│   │   ├── Login.tsx       # Authentification
+│   │   ├── Admin.tsx       # Dashboard
+│   │   ├── Users.tsx       # Gestion utilisateurs
+│   │   ├── BotConfig.tsx   # Configuration bot
+│   │   └── SuperAdmin.tsx  # Panneau super admin
+│   ├── integrations/       # Client Supabase (auto-généré)
+│   ├── lib/                # Utilitaires
+│   └── hooks/              # Hooks personnalisés
+│
 ├── supabase/
-│   ├── functions/       # Edge Functions
-│   │   ├── telegram-webhook/
-│   │   ├── auth-login/
-│   │   ├── broadcast-message/
-│   │   └── ...
-│   └── config.toml      # Configuration Supabase
-└── public/              # Fichiers statiques
+│   ├── functions/          # Edge Functions
+│   │   ├── telegram-webhook/      # Gestion messages bot
+│   │   ├── auth-login/            # Authentification
+│   │   ├── broadcast-message/     # Diffusion
+│   │   └── manage-bot-config/     # Configuration
+│   └── config.toml         # Configuration Supabase
+│
+└── public/                 # Fichiers statiques
 ```
 
-## 🔧 Edge Functions
+## 🗄️ Base de Données
 
-Les Edge Functions principales :
+### Tables Principales
 
-- **telegram-webhook** : Gère les messages entrants des bots
-- **auth-login** / **auth-register** : Authentification
-- **broadcast-message** : Diffusion de messages
-- **manage-bot-config** : Configuration des bots
-- **get-telegram-users** : Récupération des utilisateurs
-- **generate-recovery-key** : Génération de clés de récupération
+| Table | Description |
+|-------|-------------|
+| `users` | Comptes administrateurs |
+| `bot_configs` | Configuration des bots |
+| `bot_settings` | Paramètres personnalisables |
+| `bot_buttons` | Boutons de navigation |
+| `telegram_users` | Utilisateurs Telegram |
+| `broadcast_drafts` | Brouillons de messages |
+| `scheduled_broadcasts` | Messages programmés |
+| `recovery_keys` | Clés de récupération |
 
-## 📱 Responsive Design
+### Gestion des Migrations
 
-L'interface est entièrement responsive et optimisée pour :
+⚠️ **Important** : Les migrations sont gérées automatiquement par Lovable Cloud.
+- Ne modifiez pas manuellement les fichiers dans `supabase/migrations/`
+- Utilisez l'interface Lovable pour les changements de schéma
 
-- Desktop (1920px+)
-- Laptop (1024px - 1920px)
-- Tablet (768px - 1024px)
-- Mobile (320px - 768px)
+## 🎨 Personnalisation du Design
 
-## 🎨 Personnalisation du Thème
-
-Le système de design utilise des tokens CSS dans `src/index.css` :
+Modifiez les tokens CSS dans `src/index.css` :
 
 ```css
 :root {
-  --background: ...
-  --foreground: ...
-  --primary: ...
-  --secondary: ...
-  /* etc. */
+  --background: ...     /* Couleur de fond */
+  --foreground: ...     /* Couleur de texte */
+  --primary: ...        /* Couleur principale */
+  --secondary: ...      /* Couleur secondaire */
+  /* Toutes les couleurs en HSL */
 }
 ```
 
-Modifiez ces variables pour personnaliser les couleurs de l'application.
+Le système de design utilise des tokens sémantiques pour une personnalisation facile.
 
 ## 🐛 Débogage
 
-### Logs des Edge Functions
-
-Accédez aux logs via :
-- Lovable : Cliquez sur "Cloud" → "Functions" → Sélectionnez une fonction → "Logs"
-
-### Erreurs communes
+### Problèmes Courants
 
 **"Bot token invalide"**
-- Vérifiez que le token est correct
-- Assurez-vous qu'il n'y a pas d'espaces
+- ✓ Vérifiez le token (pas d'espaces)
+- ✓ Testez avec @BotFather
 
 **"Webhook non configuré"**
-- Le webhook se configure automatiquement
-- Vérifiez les logs de la fonction `telegram-webhook`
+- ✓ Vérifiez les logs dans Cloud → Functions → telegram-webhook
 
 **"Utilisateur non autorisé"**
-- Vérifiez que le compte est actif (`is_active = true`)
-- Vérifiez le rôle dans la table `users`
+- ✓ Compte actif (`is_active = true`)
+- ✓ Vérifiez le rôle dans la table `users`
+
+**"Bot ne répond plus après bannissement"**
+- ✓ C'est normal ! Vérifiez que `is_active = false` dans `bot_configs`
+
+### Accès aux Logs
+
+- **Lovable Cloud** : Cloud → Functions → [Nom fonction] → Logs
+- **Local** : Console du navigateur (`F12`)
+
+## 📱 Responsive Design
+
+Interface optimisée pour :
+- 🖥️ Desktop (1920px+)
+- 💻 Laptop (1024px - 1920px)
+- 📱 Tablet (768px - 1024px)
+- 📱 Mobile (320px - 768px)
+
+## ❓ FAQ
+
+**Q : Puis-je rendre mon projet public sur GitHub ?**  
+✅ Oui ! Vos secrets et données restent privés.
+
+**Q : Que se passe-t-il si quelqu'un remix mon projet ?**  
+✅ Il obtient uniquement le code. Base de données et secrets restent isolés.
+
+**Q : Comment inviter des collaborateurs ?**  
+Cliquez sur "Share" → Entrez leur email → Choisissez le rôle.
+
+**Q : Les changements backend se déploient automatiquement ?**  
+✅ Oui ! Seuls les changements frontend nécessitent de cliquer "Update".
+
+## 📚 Ressources
+
+- 📖 [Documentation Lovable](https://docs.lovable.dev/)
+- 💬 [Discord Communauté](https://discord.com/channels/1119885301872070706/1280461670979993613)
+- 🎥 [Tutoriels YouTube](https://www.youtube.com/watch?v=9KHLTZaJcR8&list=PLbVHz4urQBZkJiAWdG8HWoJTdgEysigIO)
+- 🤖 [API Telegram Bot](https://core.telegram.org/bots/api)
 
 ## 📄 Licence
 
-Ce projet est propriétaire. Tous droits réservés.
+Ce projet est sous licence propriétaire. Tous droits réservés.
 
 ## 🆘 Support
 
-Pour toute question ou problème :
-
-1. Consultez la [documentation Lovable](https://docs.lovable.dev/)
-2. Rejoignez le [Discord Lovable](https://discord.com/channels/1119885301872070706/1280461670979993613)
-3. Créez une issue sur le dépôt GitHub
-
-## 🙏 Remerciements
-
-- [Lovable](https://lovable.dev) - Plateforme de développement
-- [Supabase](https://supabase.com) - Backend as a Service
-- [shadcn/ui](https://ui.shadcn.com) - Composants UI
-- [Telegram](https://telegram.org) - API Bot
+Besoin d'aide ? 
+1. Consultez la [documentation](https://docs.lovable.dev/)
+2. Rejoignez le [Discord](https://discord.com/channels/1119885301872070706/1280461670979993613)
+3. Créez une issue sur GitHub
 
 ---
 
-**Fait avec ❤️ sur Lovable**
+**💜 Développé avec Lovable** - [lovable.dev](https://lovable.dev)
