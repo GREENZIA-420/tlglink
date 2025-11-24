@@ -17,6 +17,7 @@ const SuperAdmin = () => {
     totalUsers: 0,
     totalBots: 0,
     totalTelegramUsers: 0,
+    totalRegisteredUsers: 0,
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -81,10 +82,19 @@ const SuperAdmin = () => {
         .from('telegram_users')
         .select('*', { count: 'exact', head: true });
 
+      // Count total registered users (from auth.users)
+      const { data: registeredUsersCount, error: countError } = await supabase
+        .rpc('count_registered_users');
+
+      if (countError) {
+        console.error('Error counting registered users:', countError);
+      }
+
       setStats({
         totalUsers: usersCount || 0,
         totalBots: botsCount || 0,
         totalTelegramUsers: telegramUsersCount || 0,
+        totalRegisteredUsers: registeredUsersCount || 0,
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -153,13 +163,30 @@ const SuperAdmin = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Utilisateurs Inscrits
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {isLoadingStats ? "..." : stats.totalRegisteredUsers}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Comptes auth créés
+              </p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Utilisateurs Admin
               </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">

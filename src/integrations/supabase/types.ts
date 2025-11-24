@@ -316,6 +316,7 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_captcha_codes: { Args: never; Returns: undefined }
+      count_registered_users: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
