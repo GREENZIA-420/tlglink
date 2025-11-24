@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { createHash } from 'https://deno.land/std@0.177.0/node/crypto.ts';
 import { decryptPassword } from '../_shared/encryption-password.ts';
+import { createJWT } from '../_shared/jwt.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -98,7 +99,13 @@ Deno.serve(async (req) => {
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', user.id);
 
-    // Créer une session simple (token JWT sera implémenté plus tard)
+    // Créer un JWT signé et sécurisé
+    const accessToken = await createJWT({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    }, 7); // 7 jours d'expiration
+
     const session = {
       user: {
         id: user.id,
@@ -106,7 +113,7 @@ Deno.serve(async (req) => {
         full_name: user.full_name,
         role: user.role,
       },
-      access_token: btoa(JSON.stringify({ userId: user.id, timestamp: Date.now() })),
+      access_token: accessToken,
       expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 jours
     };
 

@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { decryptToken } from '../_shared/encryption.ts';
+import { verifyAuthHeader } from '../_shared/jwt.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,18 +50,47 @@ Deno.serve(async (req) => {
   try {
     console.log('Broadcast message function invoked');
 
+    // SÉCURITÉ CRITIQUE : Vérifier l'authentification
+    const authHeader = req.headers.get('Authorization');
+    const verification = await verifyAuthHeader(authHeader);
+    
+    if (!verification.valid || !verification.payload) {
+      console.error('Auth verification failed:', verification.error);
+      return new Response(
+        JSON.stringify({ error: verification.error || 'Non autorisé' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const authenticatedUserId = verification.payload.userId;
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     // Parse request body
-    const { bot_id, admin_id, message, media_urls = [], button_ids = [], scheduled_for }: BroadcastRequest = await req.json();
+    const { bot_id, message, media_urls = [], button_ids = [], scheduled_for }: Omit<BroadcastRequest, 'admin_id'> & { bot_id: string } = await req.json();
 
-    if (!bot_id || !message || !admin_id) {
+    if (!bot_id || !message) {
       return new Response(
-        JSON.stringify({ error: 'bot_id, admin_id and message are required' }),
+        JSON.stringify({ error: 'bot_id and message are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // SÉCURITÉ : Vérifier que l'utilisateur est bien le propriétaire du bot
+    const { data: botOwner, error: botOwnerError } = await supabase
+      .from('bot_configs')
+      .select('admin_id')
+      .eq('id', bot_id)
+      .single();
+
+    if (botOwnerError || !botOwner || botOwner.admin_id !== authenticatedUserId) {
+      console.error('Unauthorized: User is not bot owner');
+      return new Response(
+        JSON.stringify({ error: 'Non autorisé - vous ne pouvez pas envoyer de messages avec ce bot' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -72,7 +102,7 @@ Deno.serve(async (req) => {
         .from('scheduled_broadcasts')
         .insert({
           bot_id,
-          admin_id,
+          admin_id: authenticatedUserId,
           message,
           media_urls: media_urls.length > 0 ? media_urls : null,
           button_ids: button_ids.length > 0 ? button_ids : null,
