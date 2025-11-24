@@ -58,27 +58,9 @@ const Users = () => {
         return;
       }
 
-      const userId = session.user.id;
       const token = btoa(JSON.stringify(session));
 
-      // Verify admin access
-      const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      if (!userData || userData.role !== 'admin') {
-        toast({
-          title: "Accès refusé",
-          description: "Vous n'avez pas les permissions nécessaires.",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
-      }
-
-      // Get telegram users via edge function
+      // Charger les utilisateurs via l'edge function (vérifie que l'utilisateur est bien créateur du bot)
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-telegram-users`,
         {
@@ -89,6 +71,15 @@ const Users = () => {
           },
         }
       );
+
+      if (response.status === 404) {
+        toast({
+          title: "Configuration requise",
+          description: "Veuillez d'abord configurer votre bot.",
+        });
+        navigate("/admin/bot-config");
+        return;
+      }
 
       if (!response.ok) {
         const error = await response.json();
