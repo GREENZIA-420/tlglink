@@ -54,7 +54,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Génération automatique de codes à 6 chiffres au demarrage de votre bot
+                Génération automatique de codes à 6 chiffres au demarrage de votre bot. Codes valides pendant 120 secondes protection anti-robots
               </p>
             </CardContent>
           </Card>
