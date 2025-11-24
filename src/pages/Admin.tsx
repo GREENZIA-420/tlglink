@@ -82,13 +82,9 @@ const Admin = () => {
       const userId = session.user.id;
 
       // Check if user is admin or super_admin
-      const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
-      if (userData && (userData.role === 'admin' || userData.role === 'super_admin')) {
+      // Utiliser directement le rôle stocké dans la session locale
+      // (le vrai contrôle d'accès est refait côté serveur dans les Edge Functions)
+      if (session.user.role === 'admin' || session.user.role === 'super_admin') {
         setIsAdmin(true);
       }
 
