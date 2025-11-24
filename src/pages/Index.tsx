@@ -71,11 +71,11 @@ const Index = () => {
 
           <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <CardTitle className="text-lg">Sécurisé</CardTitle>
+              <CardTitle className="text-lg">INVITATIONS ÉPHÈMÉRE</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Protection contre les bots et spam
+                Créer des boutons d&apos;invitation à rejoindre vos groupe ou canal telegram ils serront à usage unique pour une durée de 120seconde passer ce delais le liens serra désactivée
               </p>
             </CardContent>
           </Card>
