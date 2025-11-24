@@ -26,6 +26,7 @@ const Admin = () => {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
   const [broadcastMediaFiles, setBroadcastMediaFiles] = useState<File[]>([]);
+  const [selectedBroadcastButtons, setSelectedBroadcastButtons] = useState<string[]>([]);
   const [buttons, setButtons] = useState<any[]>([]);
   const [isAddingButton, setIsAddingButton] = useState(false);
   const [editingButton, setEditingButton] = useState<any>(null);
@@ -302,6 +303,7 @@ const Admin = () => {
           bot_id: botConfig.id,
           message: broadcastMessage,
           media_urls: mediaUrls,
+          button_ids: selectedBroadcastButtons,
         },
       });
 
@@ -314,6 +316,7 @@ const Admin = () => {
 
       setBroadcastMessage("");
       setBroadcastMediaFiles([]);
+      setSelectedBroadcastButtons([]);
     } catch (error) {
       console.error('Broadcast error:', error);
       toast({
@@ -355,6 +358,16 @@ const Admin = () => {
 
   const removeBroadcastMedia = (index: number) => {
     setBroadcastMediaFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleBroadcastButton = (buttonId: string) => {
+    setSelectedBroadcastButtons(prev => {
+      if (prev.includes(buttonId)) {
+        return prev.filter(id => id !== buttonId);
+      } else {
+        return [...prev, buttonId];
+      }
+    });
   };
 
   const handleAddButton = async () => {
@@ -1177,6 +1190,44 @@ const Admin = () => {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Maximum 10 fichiers. Formats: images (JPG, PNG, etc.) et vidéos. Les médias seront envoyés groupés avec le message.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Boutons à inclure (optionnel)</Label>
+                  <div className="space-y-2">
+                    {buttons.filter(b => b.is_active).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Aucun bouton actif disponible. Créez des boutons dans l'onglet "Boutons".
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {buttons.filter(b => b.is_active).map((button) => (
+                          <div
+                            key={button.id}
+                            className="flex items-center space-x-2 p-2 border rounded hover:bg-muted/50 cursor-pointer"
+                            onClick={() => toggleBroadcastButton(button.id)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedBroadcastButtons.includes(button.id)}
+                              onChange={() => toggleBroadcastButton(button.id)}
+                              className="h-4 w-4"
+                            />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{button.label}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {button.type === "telegram_invite" ? "Invitation Telegram" :
+                                 button.type === "miniapp" ? "Mini App" : "Lien externe"}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Les boutons sélectionnés seront affichés sous le message d'annonce.
                     </p>
                   </div>
                 </div>
