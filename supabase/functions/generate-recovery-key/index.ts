@@ -112,6 +112,9 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Recovery key generated for user: ${userId}`);
+    console.log('Generated key (first 8 chars):', recoveryKey!.substring(0, 8) + '...');
+    console.log('Hashed key (first 16 chars):', hashedKey!.substring(0, 16) + '...');
+    
     // Retourner la clé en clair à l'utilisateur (une seule fois)
     return new Response(
       JSON.stringify({ success: true, recovery_key: recoveryKey! }),
