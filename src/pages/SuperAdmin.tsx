@@ -56,9 +56,13 @@ const SuperAdmin = () => {
   // Statistiques calculées
   const totalUsers = users.length;
   const activeUsers = users.filter(u => u.is_active).length;
-  const totalBots = users.reduce((acc, u) => acc + (u.bot_configs?.length || 0), 0);
-  const activeBots = users.reduce((acc, u) => acc + (u.bot_configs?.filter(b => b.is_active).length || 0), 0);
-  const totalTelegramUsers = users.reduce((acc, u) => acc + u.telegram_users_count, 0);
+  const totalBots = users.reduce((acc, u) => {
+    return acc + (Array.isArray(u.bot_configs) ? u.bot_configs.length : 0);
+  }, 0);
+  const activeBots = users.reduce((acc, u) => {
+    return acc + (Array.isArray(u.bot_configs) ? u.bot_configs.filter(b => b.is_active).length : 0);
+  }, 0);
+  const totalTelegramUsers = users.reduce((acc, u) => acc + (u.telegram_users_count || 0), 0);
 
   const checkAuthAndLoadUsers = async () => {
     try {
