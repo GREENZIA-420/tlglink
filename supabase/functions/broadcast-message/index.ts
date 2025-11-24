@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { decryptToken } from '../_shared/encryption.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,7 +79,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    const botToken = botConfig.bot_token;
+    const encryptedBotToken = botConfig.bot_token;
+    
+    // Decrypt the bot token
+    let botToken: string;
+    try {
+      botToken = await decryptToken(encryptedBotToken);
+    } catch (error) {
+      // If decryption fails, assume it's an unencrypted token (backward compatibility)
+      console.warn('Token decryption failed, assuming unencrypted token:', error);
+      botToken = encryptedBotToken;
+    }
 
     // Get all users who interacted with this bot
     const { data: users, error: usersError } = await supabase

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { decryptToken } from '../_shared/encryption.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -399,7 +400,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    const botToken = botConfig.bot_token;
+    const encryptedBotToken = botConfig.bot_token;
+    
+    // Decrypt the bot token
+    let botToken: string;
+    try {
+      botToken = await decryptToken(encryptedBotToken);
+    } catch (error) {
+      // If decryption fails, assume it's an unencrypted token (backward compatibility)
+      console.warn('Token decryption failed, assuming unencrypted token:', error);
+      botToken = encryptedBotToken;
+    }
 
     const update: TelegramUpdate = await req.json();
     console.log('Received update:', JSON.stringify(update, null, 2));

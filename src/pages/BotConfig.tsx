@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Copy, Check, Send, Loader2 } from "lucide-react";
+import { encryptPassword, decryptPassword } from "@/lib/encryption";
 
 const BotConfig = () => {
   const [botConfig, setBotConfig] = useState<any>(null);
@@ -38,7 +39,15 @@ const BotConfig = () => {
 
       if (config) {
         setBotConfig(config);
-        setBotToken(config.bot_token);
+        // Decrypt the token for display/editing
+        try {
+          const decryptedToken = await decryptPassword(config.bot_token);
+          setBotToken(decryptedToken);
+        } catch (error) {
+          // If decryption fails, assume it's an unencrypted token (backward compatibility)
+          console.warn('Token decryption failed, assuming unencrypted token');
+          setBotToken(config.bot_token);
+        }
         setBotName(config.bot_name || "");
       }
     } catch (error) {
@@ -75,12 +84,15 @@ const BotConfig = () => {
 
       const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook?bot_id=${botConfig?.id || 'NEW'}`;
 
+      // Encrypt the token before storing
+      const encryptedToken = await encryptPassword(botToken);
+
       if (botConfig) {
         // Update existing config
         const { error } = await supabase
           .from('bot_configs')
           .update({
-            bot_token: botToken,
+            bot_token: encryptedToken,
             bot_name: botName || null,
             webhook_url: webhookUrl,
             updated_at: new Date().toISOString(),
@@ -94,7 +106,7 @@ const BotConfig = () => {
           .from('bot_configs')
           .insert({
             admin_id: user.id,
-            bot_token: botToken,
+            bot_token: encryptedToken,
             bot_name: botName || null,
             webhook_url: webhookUrl,
           })

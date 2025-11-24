@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.broadcast-message]
 verify_jwt = true
+
+[functions.encrypt-existing-tokens]
+verify_jwt = true
