@@ -19,7 +19,7 @@ const Index = () => {
             LINKY BOT CREATOR
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Protection automatique avec codes de vérification temporisés
+            Création facile et gratuite de votre bot telegram pour géré vos liens et invitations
           </p>
         </div>
 
