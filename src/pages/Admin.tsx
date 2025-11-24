@@ -19,6 +19,7 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEncrypting, setIsEncrypting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [botId, setBotId] = useState<string | null>(null);
   const [botConfig, setBotConfig] = useState<any>(null);
   const [welcomeMessage, setWelcomeMessage] = useState("");
@@ -63,6 +64,18 @@ const Admin = () => {
       if (!session) {
         navigate("/login");
         return;
+      }
+
+      // Check if user is admin
+      const { data: userRole, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (!roleError && userRole) {
+        setIsAdmin(true);
       }
 
       // Load bot config first
@@ -681,34 +694,36 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="messages" className="space-y-6">
-            <Alert className="border-yellow-500/50 bg-yellow-500/10">
-              <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-              <AlertTitle>Sécurité - Rechiffrement des tokens</AlertTitle>
-              <AlertDescription className="space-y-2">
-                <p className="text-sm">
-                  Pour une sécurité maximale, rechiffrez vos tokens existants avec la nouvelle clé de chiffrement sécurisée.
-                </p>
-                <Button
-                  onClick={handleEncryptExistingTokens}
-                  disabled={isEncrypting}
-                  size="sm"
-                  variant="outline"
-                  className="mt-2"
-                >
-                  {isEncrypting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Rechiffrement en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="mr-2 h-4 w-4" />
-                      Rechiffrer les tokens maintenant
-                    </>
-                  )}
-                </Button>
-              </AlertDescription>
-            </Alert>
+            {isAdmin && (
+              <Alert className="border-yellow-500/50 bg-yellow-500/10">
+                <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                <AlertTitle>Sécurité - Rechiffrement des tokens</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p className="text-sm">
+                    Pour une sécurité maximale, rechiffrez vos tokens existants avec la nouvelle clé de chiffrement sécurisée.
+                  </p>
+                  <Button
+                    onClick={handleEncryptExistingTokens}
+                    disabled={isEncrypting}
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                  >
+                    {isEncrypting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Rechiffrement en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="mr-2 h-4 w-4" />
+                        Rechiffrer les tokens maintenant
+                      </>
+                    )}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
 
             <Card className="border-telegram/20">
               <CardHeader>

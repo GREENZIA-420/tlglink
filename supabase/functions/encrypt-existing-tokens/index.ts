@@ -12,7 +12,59 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Create client with user's JWT to verify they're authenticated
     const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+        auth: {
+          persistSession: false,
+        },
+      }
+    );
+
+    // Verify user is authenticated
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      console.error('Authentication error:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Check if user is admin
+    const { data: userRole, error: roleError } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !userRole) {
+      console.error('User is not admin:', user.id);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: Admin access required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+
+    console.log('Admin user verified:', user.id);
+
+    // Use service role key for the actual operations
+    const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
@@ -25,7 +77,7 @@ Deno.serve(async (req) => {
     console.log('Fetching all bot configs...');
 
     // Get all bot configs
-    const { data: botConfigs, error: fetchError } = await supabaseClient
+    const { data: botConfigs, error: fetchError } = await serviceClient
       .from('bot_configs')
       .select('id, bot_token');
 
@@ -36,7 +88,7 @@ Deno.serve(async (req) => {
 
     if (!botConfigs || botConfigs.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'No bot configs to encrypt', count: 0 }),
+        JSON.stringify({ message: 'No bot configs to encrypt', encrypted: 0, skipped: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
@@ -56,7 +108,7 @@ Deno.serve(async (req) => {
           console.log(`Encrypting token for bot ${config.id}...`);
           const encryptedToken = await encryptToken(config.bot_token);
 
-          const { error: updateError } = await supabaseClient
+          const { error: updateError } = await serviceClient
             .from('bot_configs')
             .update({ bot_token: encryptedToken })
             .eq('id', config.id);
