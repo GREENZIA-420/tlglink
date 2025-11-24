@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { authStorage, logout } from "@/lib/auth";
 
 const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -57,22 +58,23 @@ const Admin = () => {
   const checkAuthAndLoadSettings = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = authStorage.getSession();
       
       if (!session) {
         navigate("/login");
         return;
       }
 
-      // Check if user is admin
-      const { data: userRole, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+      const userId = session.user.id;
 
-      if (!roleError && userRole) {
+      // Check if user is admin
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (userData && userData.role === 'admin') {
         setIsAdmin(true);
       }
 
@@ -80,7 +82,7 @@ const Admin = () => {
       const { data: config, error: configError } = await supabase
         .from('bot_configs')
         .select('*')
-        .eq('admin_id', session.user.id)
+        .eq('admin_id', userId)
         .maybeSingle();
 
       if (configError) {
@@ -144,15 +146,12 @@ const Admin = () => {
 
   const handleLogout = async () => {
     try {
-      // Clear saved credentials (using correct keys from Login.tsx)
+      // Clear saved credentials
       localStorage.removeItem('rememberedEmail');
       localStorage.removeItem('rememberedPassword');
       
-      // Sign out from Supabase
-      await supabase.auth.signOut();
-      
-      // Navigate to login
-      navigate("/login");
+      // Logout
+      logout();
     } catch (error) {
       console.error('Logout error:', error);
       // Even if there's an error, clear local data and redirect
