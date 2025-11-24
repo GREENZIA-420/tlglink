@@ -49,3 +49,54 @@ export async function encryptPassword(password: string): Promise<string> {
   // Encoder en base64
   return btoa(String.fromCharCode(...combined));
 }
+
+// Fonction pour déchiffrer un mot de passe chiffré avec encryptPassword
+export async function decryptPassword(encryptedPassword: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  const salt = Deno.env.get('ENCRYPTION_SALT') || 'default-salt-change-in-production';
+  const saltData = encoder.encode(salt);
+
+  // Dériver la même clé que pour le chiffrement
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    saltData,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits', 'deriveKey']
+  );
+
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: saltData,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['decrypt']
+  );
+
+  // Décoder le base64 en tableau d'octets
+  const combined = Uint8Array.from(
+    atob(encryptedPassword),
+    (char) => char.charCodeAt(0)
+  );
+
+  const iv = combined.slice(0, 12);
+  const encryptedData = combined.slice(12);
+
+  const decryptedData = await crypto.subtle.decrypt(
+    {
+      name: 'AES-GCM',
+      iv,
+    },
+    key,
+    encryptedData
+  );
+
+  return decoder.decode(new Uint8Array(decryptedData));
+}

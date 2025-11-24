@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { createHash } from 'https://deno.land/std@0.177.0/node/crypto.ts';
+import { decryptPassword } from '../_shared/encryption-password.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,16 +60,12 @@ Deno.serve(async (req) => {
     const passwordHash = hashPassword(password);
     let isPasswordValid = user.password_hash === passwordHash;
     let needsMigration = false;
-    
-    // Si le mot de passe ne correspond pas avec SHA-256, essayer avec l'ancien système AES-GCM
+
+    // Si le mot de passe ne correspond pas avec SHA-256, essayer avec l'ancien format chiffré AES-GCM
     if (!isPasswordValid) {
       try {
-        // Importer la fonction de décryptage AES-GCM
-        const { encryptPassword } = await import('../_shared/encryption-password.ts');
-        const encryptedPassword = await encryptPassword(password);
-        
-        // Comparer avec le mot de passe chiffré stocké
-        if (user.password_hash === encryptedPassword) {
+        const decryptedPassword = await decryptPassword(user.password_hash);
+        if (decryptedPassword === password) {
           isPasswordValid = true;
           needsMigration = true;
           console.log('Password valid with old encryption, migration needed for:', email);
@@ -77,7 +74,7 @@ Deno.serve(async (req) => {
         console.error('Error checking old password format:', error);
       }
     }
-    
+
     if (!isPasswordValid) {
       console.error('Invalid password for:', email);
       return new Response(
@@ -85,7 +82,7 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
-    
+
     // Si le mot de passe nécessite une migration, le mettre à jour avec le nouveau hash
     if (needsMigration) {
       await supabaseClient

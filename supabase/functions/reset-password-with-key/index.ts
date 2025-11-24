@@ -1,11 +1,18 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { encryptPassword } from '../_shared/encryption-password.ts';
+import { createHash } from 'https://deno.land/std@0.177.0/node/crypto.ts';
 import { hashRecoveryKey } from '../_shared/hash.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Simple hash function pour les mots de passe (compatible avec l'auth-login)
+function hashPassword(password: string): string {
+  const hash = createHash('sha256').update(password).digest('hex');
+  return typeof hash === 'string' ? hash : hash.toString('hex');
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -85,8 +92,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Chiffrer le nouveau mot de passe
-    const passwordHash = await encryptPassword(new_password);
+    // Hasher le nouveau mot de passe (même format que lors de la connexion)
+    const passwordHash = hashPassword(new_password);
 
     // Mettre à jour le mot de passe de l'utilisateur
     const { error: updateError } = await supabaseClient
