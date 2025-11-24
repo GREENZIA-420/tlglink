@@ -69,12 +69,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Désactiver les anciennes clés
+    // Supprimer les anciennes clés
     await supabaseClient
       .from('recovery_keys')
-      .update({ is_active: false })
-      .eq('user_id', userId)
-      .eq('is_active', true);
+      .delete()
+      .eq('user_id', userId);
 
     // Générer une nouvelle clé unique
     let recoveryKey: string;
