@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Loader2 } from "lucide-react";
+import { Shield, Loader2, Home } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { encryptPassword, decryptPassword } from "@/lib/encryption";
@@ -135,8 +135,19 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-2 shadow-xl">
         <CardHeader className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-telegram/10 mx-auto">
-            <Shield className="w-8 h-8 text-telegram" />
+          <div className="flex items-center justify-between w-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-telegram/10">
+              <Shield className="w-8 h-8 text-telegram" />
+            </div>
+            <div className="w-10" />
           </div>
           <div>
             <CardTitle className="text-2xl">Tableau de Bord</CardTitle>
@@ -206,10 +217,10 @@ const Login = () => {
                   <Button
                     type="button"
                     variant="link"
-                    className="text-sm text-muted-foreground"
+                    className="text-sm text-muted-foreground px-2 h-auto py-2 whitespace-normal"
                     onClick={() => navigate('/recover-account')}
                   >
-                    Mot de passe oublié ? Utilisez votre clé de récupération
+                    Mot de passe oublié ?
                   </Button>
                 </div>
               </form>
