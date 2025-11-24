@@ -79,15 +79,31 @@ const Admin = () => {
       }
 
       // Load bot config first
-      const { data: config, error: configError } = await supabase
-        .from('bot_configs')
-        .select('*')
-        .eq('admin_id', userId)
-        .maybeSingle();
+      const token = btoa(JSON.stringify(session));
 
-      if (configError) {
-        console.error('Error loading bot config:', configError);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-bot-config`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.error('Error loading bot config:', await response.text());
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de charger la configuration du bot.',
+          variant: 'destructive',
+        });
+        navigate('/admin/bot-config');
+        return;
       }
+
+      const { config } = await response.json();
 
       if (!config) {
         // No bot config yet, redirect to bot config page

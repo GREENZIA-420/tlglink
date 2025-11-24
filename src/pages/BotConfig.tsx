@@ -88,11 +88,10 @@ const BotConfig = () => {
 
     try {
       const session = authStorage.getSession();
-      if (!session) return;
-
-      const userId = session.user.id;
-      const { data: { session: supabaseSession } } = await supabase.auth.getSession();
-      if (!supabaseSession) throw new Error('No session');
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
       const action = botConfig ? 'update' : 'create';
       const payload: any = {
@@ -109,15 +108,25 @@ const BotConfig = () => {
         payload.botConfig.bot_token = botToken;
       }
 
-      const { data, error } = await supabase.functions.invoke('manage-bot-config', {
-        body: payload,
-        headers: {
-          Authorization: `Bearer ${supabaseSession.access_token}`,
-        },
-      });
+      const token = btoa(JSON.stringify(session));
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-config`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Erreur lors de la sauvegarde de la configuration');
+      }
 
       // Update webhook URL with actual bot_id if new config
       if (!botConfig && data.data) {
