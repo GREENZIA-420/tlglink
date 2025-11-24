@@ -417,6 +417,34 @@ Deno.serve(async (req) => {
     // Record user interaction
     await recordUserInteraction(botId, message, req);
 
+    // Check if user is banned
+    const { data: userData, error: userError } = await supabase
+      .from('telegram_users')
+      .select('is_banned')
+      .eq('telegram_id', userId)
+      .eq('bot_id', botId)
+      .maybeSingle();
+
+    if (userData?.is_banned) {
+      // Get banned message from settings or use default
+      const { data: bannedMessageSetting } = await supabase
+        .from('bot_settings')
+        .select('value')
+        .eq('key', 'banned_message')
+        .eq('bot_id', botId)
+        .maybeSingle();
+
+      const bannedMessage = bannedMessageSetting?.value ||
+        '🚫 <b>Accès refusé</b>\n\n' +
+        'Vous avez été banni de ce bot et ne pouvez plus l\'utiliser.\n\n' +
+        'Si vous pensez qu\'il s\'agit d\'une erreur, contactez l\'administrateur.';
+
+      await sendTelegramMessage(botToken, chatId, bannedMessage);
+      return new Response('OK', {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Check if it's /start command
     if (text === '/start') {
       await handleNewUser(botToken, botId, userId, firstName, chatId);

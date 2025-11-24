@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, Ban } from "lucide-react";
 
 interface TelegramUser {
   id: string;
@@ -35,6 +35,8 @@ interface TelegramUser {
   first_interaction_at: string;
   last_interaction_at: string;
   total_interactions: number;
+  is_banned: boolean;
+  banned_at: string | null;
 }
 
 const Users = () => {
@@ -139,6 +141,37 @@ const Users = () => {
     });
   };
 
+  const handleBanToggle = async (user: TelegramUser) => {
+    try {
+      const { error } = await supabase
+        .from('telegram_users')
+        .update({
+          is_banned: !user.is_banned,
+          banned_at: !user.is_banned ? new Date().toISOString() : null,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: user.is_banned ? "Utilisateur débanni" : "Utilisateur banni",
+        description: user.is_banned 
+          ? `${user.first_name} peut maintenant utiliser le bot.`
+          : `${user.first_name} ne peut plus utiliser le bot.`,
+      });
+
+      // Refresh user list
+      checkAuthAndLoadUsers();
+    } catch (error) {
+      console.error('Error toggling ban:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le statut de l'utilisateur.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
@@ -195,15 +228,17 @@ const Users = () => {
                     <TableHead>Telegram ID</TableHead>
                     <TableHead>Nom</TableHead>
                     <TableHead>Username</TableHead>
+                    <TableHead>Statut</TableHead>
                     <TableHead>Première interaction</TableHead>
                     <TableHead>Dernière interaction</TableHead>
                     <TableHead className="text-right">Interactions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         {searchQuery ? "Aucun utilisateur trouvé" : "Aucun utilisateur enregistré"}
                       </TableCell>
                     </TableRow>
@@ -232,6 +267,17 @@ const Users = () => {
                             <span className="text-muted-foreground text-sm">—</span>
                           )}
                         </TableCell>
+                        <TableCell>
+                          {user.is_banned ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
+                              Banni
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600">
+                              Actif
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm">
                           {formatDate(user.first_interaction_at)}
                         </TableCell>
@@ -240,6 +286,15 @@ const Users = () => {
                         </TableCell>
                         <TableCell className="text-right font-semibold">
                           {user.total_interactions}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant={user.is_banned ? "outline" : "destructive"}
+                            onClick={() => handleBanToggle(user)}
+                          >
+                            {user.is_banned ? "Débannir" : "Bannir"}
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))
