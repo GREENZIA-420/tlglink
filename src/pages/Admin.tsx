@@ -394,6 +394,12 @@ const Admin = () => {
 
     setIsSaving(true);
     try {
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+
       let imageUrl = welcomeImageUrl;
 
       // Upload new image if selected
@@ -424,36 +430,27 @@ const Admin = () => {
         { key: 'welcome_image_url', value: imageUrl },
       ];
 
-      for (const setting of settingsToUpdate) {
-        // Check if setting exists
-        const { data: existing } = await supabase
-          .from('bot_settings')
-          .select('id')
-          .eq('key', setting.key)
-          .eq('bot_id', botId)
-          .maybeSingle();
+      const token = btoa(JSON.stringify(session));
 
-        if (existing) {
-          // Update existing
-          const { error } = await supabase
-            .from('bot_settings')
-            .update({ value: setting.value })
-            .eq('key', setting.key)
-            .eq('bot_id', botId);
-
-          if (error) throw error;
-        } else {
-          // Insert new
-          const { error } = await supabase
-            .from('bot_settings')
-            .insert({
-              key: setting.key,
-              value: setting.value,
-              bot_id: botId,
-            });
-
-          if (error) throw error;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-settings`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            botId: botId,
+            settings: settingsToUpdate,
+          }),
         }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Erreur lors de la sauvegarde');
       }
 
       setWelcomeImageUrl(imageUrl);
