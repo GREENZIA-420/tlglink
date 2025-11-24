@@ -123,9 +123,7 @@ const Users = () => {
       user.telegram_id.toString().includes(query) ||
       user.first_name?.toLowerCase().includes(query) ||
       user.last_name?.toLowerCase().includes(query) ||
-      user.username?.toLowerCase().includes(query) ||
-      user.platform?.toLowerCase().includes(query) ||
-      user.ip_address?.toLowerCase().includes(query)
+      user.username?.toLowerCase().includes(query)
     );
     setFilteredUsers(filtered);
   }, [searchQuery, users]);
@@ -182,7 +180,7 @@ const Users = () => {
             <div className="relative mt-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par ID, nom, username, plateforme ou IP..."
+                placeholder="Rechercher par ID, nom ou username..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -197,8 +195,6 @@ const Users = () => {
                     <TableHead>Telegram ID</TableHead>
                     <TableHead>Nom</TableHead>
                     <TableHead>Username</TableHead>
-                    <TableHead>Plateforme</TableHead>
-                    <TableHead>IP</TableHead>
                     <TableHead>Première interaction</TableHead>
                     <TableHead>Dernière interaction</TableHead>
                     <TableHead className="text-right">Interactions</TableHead>
@@ -207,7 +203,7 @@ const Users = () => {
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                         {searchQuery ? "Aucun utilisateur trouvé" : "Aucun utilisateur enregistré"}
                       </TableCell>
                     </TableRow>
@@ -235,14 +231,6 @@ const Users = () => {
                           ) : (
                             <span className="text-muted-foreground text-sm">—</span>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                            {user.platform || 'unknown'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          {user.ip_address || '—'}
                         </TableCell>
                         <TableCell className="text-sm">
                           {formatDate(user.first_interaction_at)}
