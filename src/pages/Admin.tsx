@@ -119,13 +119,19 @@ const Admin = () => {
       setBotId(config.id);
 
       // Load settings for this bot
-      const { data: settings, error } = await supabase
-        .from('bot_settings')
-        .select('*')
-        .eq('bot_id', config.id);
+      const settingsResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-bot-settings`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      if (error) {
-        console.error('Error loading settings:', error);
+      if (!settingsResponse.ok) {
+        console.error('Error loading settings:', await settingsResponse.text());
         toast({
           title: "Erreur",
           description: "Impossible de charger les paramètres",
@@ -134,22 +140,30 @@ const Admin = () => {
         return;
       }
 
-      settings?.forEach((setting) => {
+      const { settings } = await settingsResponse.json();
+
+      settings?.forEach((setting: any) => {
         if (setting.key === 'welcome_message') setWelcomeMessage(setting.value);
         if (setting.key === 'captcha_message') setCaptchaMessage(setting.value);
         if (setting.key === 'welcome_image_url') setWelcomeImageUrl(setting.value);
       });
 
       // Load buttons for this bot
-      const { data: buttonsData, error: buttonsError } = await supabase
-        .from('bot_buttons')
-        .select('*')
-        .eq('bot_id', config.id)
-        .order('position', { ascending: true });
+      const buttonsResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-bot-buttons`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      if (buttonsError) {
-        console.error('Error loading buttons:', buttonsError);
+      if (!buttonsResponse.ok) {
+        console.error('Error loading buttons:', await buttonsResponse.text());
       } else {
+        const { buttons: buttonsData } = await buttonsResponse.json();
         setButtons(buttonsData || []);
       }
     } catch (error) {
