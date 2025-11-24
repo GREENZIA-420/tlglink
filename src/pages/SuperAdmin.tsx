@@ -76,25 +76,9 @@ const SuperAdmin = () => {
       const userId = session.user.id;
       const token = btoa(JSON.stringify(session));
 
-      // Vérifier l'accès super admin
-      const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      if (!userData || userData.role !== 'super_admin') {
-        toast({
-          title: "Accès refusé",
-          description: "Vous devez être super admin pour accéder à cette page.",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
-      }
-
-      // Charger tous les utilisateurs via l'edge function
-      const response = await fetch(
+      // Vérifier l'accès super admin via edge function
+      // Note: On doit vérifier manuellement car le système utilise une auth custom
+      const verifyResponse = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-all-users`,
         {
           method: 'GET',
@@ -105,14 +89,21 @@ const SuperAdmin = () => {
         }
       );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erreur lors du chargement des utilisateurs');
+      if (!verifyResponse.ok) {
+        const error = await verifyResponse.json();
+        toast({
+          title: "Accès refusé",
+          description: error.error || "Vous devez être super admin pour accéder à cette page.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
       }
 
-      const { users: usersData } = await response.json();
+      const { users: usersData } = await verifyResponse.json();
       setUsers(usersData || []);
       setFilteredUsers(usersData || []);
+
 
       // Charger le salt d'encryption actuel
       const saltResponse = await supabase
