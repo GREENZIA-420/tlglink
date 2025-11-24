@@ -731,22 +731,42 @@ const Admin = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('bot_buttons')
-        .insert({
-          label: newButton.label,
-          type: newButton.type,
-          telegram_chat_id: newButton.type === "telegram_invite" ? newButton.telegram_chat_id : null,
-          external_url: newButton.type === "external_link" ? newButton.external_url : null,
-          web_app_url: newButton.type === "miniapp" ? newButton.web_app_url : null,
-          position: buttons.length,
-          bot_id: botId,
-        })
-        .select()
-        .single();
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-      if (error) throw error;
+      const token = btoa(JSON.stringify(session));
 
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-buttons`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'create',
+            botId: botId,
+            button: {
+              label: newButton.label,
+              type: newButton.type,
+              telegram_chat_id: newButton.type === "telegram_invite" ? newButton.telegram_chat_id : null,
+              external_url: newButton.type === "external_link" ? newButton.external_url : null,
+              web_app_url: newButton.type === "miniapp" ? newButton.web_app_url : null,
+              position: buttons.length,
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'ajout du bouton');
+      }
+
+      const { button: data } = await response.json();
       setButtons([...buttons, data]);
       setNewButton({
         label: "",
@@ -774,12 +794,33 @@ const Admin = () => {
 
   const handleDeleteButton = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('bot_buttons')
-        .delete()
-        .eq('id', id);
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-      if (error) throw error;
+      const token = btoa(JSON.stringify(session));
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-buttons`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'delete',
+            botId: botId,
+            buttonId: id,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la suppression du bouton');
+      }
 
       setButtons(buttons.filter(b => b.id !== id));
 
@@ -799,12 +840,36 @@ const Admin = () => {
 
   const handleToggleButton = async (id: string, isActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('bot_buttons')
-        .update({ is_active: !isActive })
-        .eq('id', id);
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-      if (error) throw error;
+      const token = btoa(JSON.stringify(session));
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-buttons`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'toggle',
+            botId: botId,
+            buttonId: id,
+            button: {
+              is_active: !isActive,
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la modification du bouton');
+      }
 
       setButtons(buttons.map(b => b.id === id ? { ...b, is_active: !isActive } : b));
 
@@ -872,28 +937,57 @@ const Admin = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('bot_buttons')
-        .update({
-          label: editForm.label,
-          type: editForm.type,
-          telegram_chat_id: editForm.type === "telegram_invite" ? editForm.telegram_chat_id : null,
-          external_url: editForm.type === "external_link" ? editForm.external_url : null,
-          web_app_url: editForm.type === "miniapp" ? editForm.web_app_url : null,
-          position: editForm.position,
-        })
-        .eq('id', editingButton.id);
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-      if (error) throw error;
+      const token = btoa(JSON.stringify(session));
 
-      // Reload buttons to get updated order
-      const { data: updatedButtons } = await supabase
-        .from('bot_buttons')
-        .select('*')
-        .order('position', { ascending: true });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-bot-buttons`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'update',
+            botId: botId,
+            buttonId: editingButton.id,
+            button: {
+              label: editForm.label,
+              type: editForm.type,
+              telegram_chat_id: editForm.type === "telegram_invite" ? editForm.telegram_chat_id : null,
+              external_url: editForm.type === "external_link" ? editForm.external_url : null,
+              web_app_url: editForm.type === "miniapp" ? editForm.web_app_url : null,
+              position: editForm.position,
+            },
+          }),
+        }
+      );
 
-      if (updatedButtons) {
-        setButtons(updatedButtons);
+      if (!response.ok) {
+        throw new Error('Erreur lors de la modification du bouton');
+      }
+
+      // Reload buttons
+      const buttonsResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-bot-buttons`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (buttonsResponse.ok) {
+        const { buttons: updatedButtons } = await buttonsResponse.json();
+        setButtons(updatedButtons || []);
       }
       
       setEditingButton(null);
