@@ -18,6 +18,7 @@ const BotConfig = () => {
   const [isSettingWebhook, setIsSettingWebhook] = useState(false);
   const [copied, setCopied] = useState(false);
   const [tokenChanged, setTokenChanged] = useState(false);
+  const [clearToken, setClearToken] = useState(""); // Pour garder le token en clair temporairement
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -128,11 +129,16 @@ const BotConfig = () => {
         throw new Error(data.error || 'Erreur lors de la sauvegarde de la configuration');
       }
 
+      // Garder le token en clair pour configurer le webhook
+      if (!botConfig || tokenChanged) {
+        setClearToken(botToken);
+      }
+
       await loadBotConfig();
 
       toast({
         title: "Succès",
-        description: "Configuration du bot enregistrée avec chiffrement sécurisé.",
+        description: "Configuration enregistrée. Vous pouvez maintenant configurer le webhook.",
       });
     } catch (error) {
       console.error('Error:', error);
@@ -159,10 +165,10 @@ const BotConfig = () => {
   };
 
   const handleSetWebhook = async () => {
-    if (!tokenChanged || !botToken || !botConfig?.webhook_url) {
+    if (!clearToken || !botConfig?.webhook_url) {
       toast({
         title: "Erreur",
-        description: "Veuillez d'abord entrer et enregistrer un nouveau token",
+        description: "Veuillez d'abord enregistrer la configuration avec un token valide",
         variant: "destructive",
       });
       return;
@@ -171,7 +177,7 @@ const BotConfig = () => {
     setIsSettingWebhook(true);
     try {
       const response = await fetch(
-        `https://api.telegram.org/bot${botToken}/setWebhook`,
+        `https://api.telegram.org/bot${clearToken}/setWebhook`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -182,6 +188,7 @@ const BotConfig = () => {
       const data = await response.json();
 
       if (data.ok) {
+        setClearToken(""); // Effacer le token en clair après utilisation
         toast({
           title: "✅ Webhook configuré",
           description: "Le bot est maintenant opérationnel",
@@ -309,14 +316,14 @@ const BotConfig = () => {
                 <div className="pt-4 border-t">
                   <h3 className="text-sm font-medium mb-2">Activation du Bot</h3>
                   <p className="text-xs text-muted-foreground mb-4">
-                    {tokenChanged 
-                      ? "Enregistrez d'abord le nouveau token, puis configurez le webhook Telegram"
-                      : "Configurez le webhook Telegram pour activer votre bot"
+                    {!clearToken 
+                      ? "Enregistrez d'abord la configuration avec un token pour activer le webhook"
+                      : "Cliquez pour configurer le webhook et activer votre bot"
                     }
                   </p>
                   <Button
                     onClick={handleSetWebhook}
-                    disabled={isSettingWebhook || !tokenChanged}
+                    disabled={isSettingWebhook || !clearToken}
                     className="w-full"
                   >
                     {isSettingWebhook ? (
