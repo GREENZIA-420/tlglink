@@ -160,6 +160,66 @@ export type Database = {
           },
         ]
       }
+      broadcast_drafts: {
+        Row: {
+          admin_id: string
+          bot_id: string
+          button_ids: string[] | null
+          created_at: string | null
+          id: string
+          is_scheduled: boolean | null
+          media_urls: string[] | null
+          message: string
+          scheduled_date: string | null
+          scheduled_time: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_id: string
+          bot_id: string
+          button_ids?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_scheduled?: boolean | null
+          media_urls?: string[] | null
+          message: string
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_id?: string
+          bot_id?: string
+          button_ids?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_scheduled?: boolean | null
+          media_urls?: string[] | null
+          message?: string
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_drafts_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_drafts_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bot_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       captcha_codes: {
         Row: {
           bot_id: string | null
