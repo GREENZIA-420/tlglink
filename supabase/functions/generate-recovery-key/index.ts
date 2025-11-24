@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { encryptToken } from '../_shared/encryption.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -77,15 +78,18 @@ Deno.serve(async (req) => {
 
     // Générer une nouvelle clé unique
     let recoveryKey: string;
+    let encryptedKey: string;
     let isUnique = false;
     
     while (!isUnique) {
       recoveryKey = generateRecoveryKey();
+      encryptedKey = await encryptToken(recoveryKey);
       
+      // Vérifier l'unicité de la clé cryptée
       const { data: existing } = await supabaseClient
         .from('recovery_keys')
         .select('id')
-        .eq('recovery_key', recoveryKey)
+        .eq('recovery_key', encryptedKey)
         .single();
       
       if (!existing) {
@@ -93,12 +97,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Insérer la nouvelle clé
+    // Insérer la nouvelle clé cryptée
     const { data: newKey, error } = await supabaseClient
       .from('recovery_keys')
       .insert({
         user_id: userId,
-        recovery_key: recoveryKey!,
+        recovery_key: encryptedKey!,
       })
       .select()
       .single();
@@ -109,8 +113,9 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Recovery key generated for user: ${userId}`);
+    // Retourner la clé en clair à l'utilisateur (une seule fois)
     return new Response(
-      JSON.stringify({ success: true, recovery_key: newKey.recovery_key }),
+      JSON.stringify({ success: true, recovery_key: recoveryKey! }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { encryptPassword } from '../_shared/encryption-password.ts';
+import { encryptToken } from '../_shared/encryption.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,11 +35,14 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Vérifier la clé de récupération
+    // Crypter la clé fournie pour la comparer avec celle en base
+    const encryptedKey = await encryptToken(recovery_key.trim().toUpperCase());
+
+    // Vérifier la clé de récupération cryptée
     const { data: keyData, error: keyError } = await supabaseClient
       .from('recovery_keys')
       .select('*')
-      .eq('recovery_key', recovery_key.trim().toUpperCase())
+      .eq('recovery_key', encryptedKey)
       .eq('is_active', true)
       .is('used_at', null)
       .single();
