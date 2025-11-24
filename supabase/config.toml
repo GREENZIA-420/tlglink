@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.manage-bot-buttons]
 verify_jwt = false
+
+[functions.get-telegram-users]
+verify_jwt = false
+
+[functions.manage-telegram-user]
+verify_jwt = false

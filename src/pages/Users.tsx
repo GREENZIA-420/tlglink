@@ -59,6 +59,7 @@ const Users = () => {
       }
 
       const userId = session.user.id;
+      const token = btoa(JSON.stringify(session));
 
       // Verify admin access
       const { data: userData } = await supabase
@@ -77,33 +78,24 @@ const Users = () => {
         return;
       }
 
-      // Get admin's bot config
-      const { data: botConfig, error: configError } = await supabase
-        .from('bot_configs')
-        .select('*')
-        .eq('admin_id', userId)
-        .maybeSingle();
+      // Get telegram users via edge function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-telegram-users`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      if (configError || !botConfig) {
-        toast({
-          title: "Configuration requise",
-          description: "Veuillez d'abord configurer votre bot.",
-        });
-        navigate("/admin/bot-config");
-        return;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erreur lors du chargement des utilisateurs');
       }
 
-      setBotId(botConfig.id);
-
-      // Load users for this bot only
-      const { data: usersData, error: usersError } = await supabase
-        .from('telegram_users')
-        .select('*')
-        .eq('bot_id', botConfig.id)
-        .order('first_interaction_at', { ascending: false });
-
-      if (usersError) throw usersError;
-
+      const { users: usersData } = await response.json();
       setUsers(usersData || []);
       setFilteredUsers(usersData || []);
     } catch (error) {
@@ -151,15 +143,32 @@ const Users = () => {
 
   const handleBanToggle = async (user: TelegramUser) => {
     try {
-      const { error } = await supabase
-        .from('telegram_users')
-        .update({
-          is_banned: !user.is_banned,
-          banned_at: !user.is_banned ? new Date().toISOString() : null,
-        })
-        .eq('id', user.id);
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-      if (error) throw error;
+      const token = btoa(JSON.stringify(session));
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-telegram-user`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            telegramUserId: user.id,
+            isBanned: !user.is_banned,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la modification du statut');
+      }
 
       toast({
         title: user.is_banned ? "Utilisateur débanni" : "Utilisateur banni",
