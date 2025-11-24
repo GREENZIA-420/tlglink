@@ -33,9 +33,11 @@ async function createChatInviteLink(botToken: string, chatId: string, userId: nu
 
 interface BroadcastRequest {
   bot_id: string;
+  admin_id: string;
   message: string;
   media_urls?: string[];
   button_ids?: string[];
+  scheduled_for?: string; // ISO date string
 }
 
 Deno.serve(async (req) => {
@@ -53,16 +55,45 @@ Deno.serve(async (req) => {
     );
 
     // Parse request body
-    const { bot_id, message, media_urls = [], button_ids = [] }: BroadcastRequest = await req.json();
+    const { bot_id, admin_id, message, media_urls = [], button_ids = [], scheduled_for }: BroadcastRequest = await req.json();
 
-    if (!bot_id || !message) {
+    if (!bot_id || !message || !admin_id) {
       return new Response(
-        JSON.stringify({ error: 'bot_id and message are required' }),
+        JSON.stringify({ error: 'bot_id, admin_id and message are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Broadcasting message for bot_id: ${bot_id}`);
+    // If scheduled_for is provided, save to database for later sending
+    if (scheduled_for) {
+      console.log(`Scheduling message for ${scheduled_for}`);
+      
+      const { error: insertError } = await supabase
+        .from('scheduled_broadcasts')
+        .insert({
+          bot_id,
+          admin_id,
+          message,
+          media_urls: media_urls.length > 0 ? media_urls : null,
+          button_ids: button_ids.length > 0 ? button_ids : null,
+          scheduled_for,
+        });
+
+      if (insertError) {
+        console.error('Error scheduling broadcast:', insertError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to schedule broadcast' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, scheduled: true, scheduled_for }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Broadcasting message immediately for bot_id: ${bot_id}`);
 
     // Get bot config
     const { data: botConfig, error: botError } = await supabase

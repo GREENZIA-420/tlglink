@@ -198,6 +198,63 @@ export type Database = {
           },
         ]
       }
+      scheduled_broadcasts: {
+        Row: {
+          admin_id: string
+          bot_id: string
+          button_ids: string[] | null
+          created_at: string | null
+          id: string
+          is_sent: boolean | null
+          media_urls: string[] | null
+          message: string
+          scheduled_for: string
+          sent_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_id: string
+          bot_id: string
+          button_ids?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_sent?: boolean | null
+          media_urls?: string[] | null
+          message: string
+          scheduled_for: string
+          sent_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_id?: string
+          bot_id?: string
+          button_ids?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_sent?: boolean | null
+          media_urls?: string[] | null
+          message?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_broadcasts_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_broadcasts_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bot_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telegram_invite_links: {
         Row: {
           bot_id: string | null
