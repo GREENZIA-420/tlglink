@@ -1,17 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { encryptToken } from '../_shared/encryption.ts';
+import { verifyAuthHeader } from '../_shared/jwt.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-interface SessionPayload {
-  user: {
-    id: string;
-  };
-  expires_at: number;
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -19,35 +13,19 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Vérifier et décoder le JWT signé
     const authHeader = req.headers.get('Authorization');
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const verification = await verifyAuthHeader(authHeader);
+    
+    if (!verification.valid || !verification.payload) {
+      console.error('Auth verification failed:', verification.error);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: verification.error || 'Non autorisé' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const token = authHeader.replace('Bearer ', '');
-
-    let session: SessionPayload;
-    try {
-      session = JSON.parse(atob(token));
-    } catch {
-      return new Response(
-        JSON.stringify({ error: 'Token invalide' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (session.expires_at < Date.now()) {
-      return new Response(
-        JSON.stringify({ error: 'Session expirée' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const userId = session.user.id;
+    const userId = verification.payload.userId;
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

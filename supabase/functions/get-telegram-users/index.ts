@@ -1,15 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.84.0'
+import { verifyAuthHeader } from '../_shared/jwt.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface CustomJWT {
-  user: {
-    id: string;
-  };
-  expires_at: number;
 }
 
 Deno.serve(async (req) => {
@@ -23,34 +17,19 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
+    // Vérifier et décoder le JWT signé
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Non autorisé' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const token = authHeader.replace('Bearer ', '')
+    const verification = await verifyAuthHeader(authHeader)
     
-    let session: CustomJWT
-    try {
-      session = JSON.parse(atob(token))
-    } catch {
+    if (!verification.valid || !verification.payload) {
+      console.error('Auth verification failed:', verification.error)
       return new Response(
-        JSON.stringify({ error: 'Token invalide' }),
+        JSON.stringify({ error: verification.error || 'Non autorisé' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    if (session.expires_at < Date.now()) {
-      return new Response(
-        JSON.stringify({ error: 'Session expirée' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const userId = session.user.id
+    const userId = verification.payload.userId
 
     // Get the bot config for this user
     const { data: botConfig } = await supabase
