@@ -23,6 +23,28 @@ const Index = () => {
           </p>
         </div>
 
+        {/* Admin Access */}
+        <Card className="border-2 shadow-lg mb-12">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Accès Administrateur
+              <Badge variant="secondary">Sécurisé</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Connectez-vous au panel d'administration pour configurer le bot et gérer les messages.
+            </p>
+            <Button
+              onClick={() => navigate("/login")}
+              className="w-full bg-telegram hover:bg-telegram-dark"
+            >
+              <LogIn className="w-4 h-4 mr-2" />
+              Accéder au Panel Admin
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Features Grid */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <Card className="border-2 hover:border-primary/50 transition-colors">
