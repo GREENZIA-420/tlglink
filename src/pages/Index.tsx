@@ -49,7 +49,6 @@ const Index = () => {
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <CheckCircle2 className="w-8 h-8 text-telegram mb-2" />
               <CardTitle className="text-lg">CODES CAPTCHA</CardTitle>
             </CardHeader>
             <CardContent>
@@ -61,7 +60,6 @@ const Index = () => {
 
           <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <Clock className="w-8 h-8 text-telegram mb-2" />
               <CardTitle className="text-lg">MESSAGES PERSONALISÉE</CardTitle>
             </CardHeader>
             <CardContent>
@@ -73,7 +71,6 @@ const Index = () => {
 
           <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <Shield className="w-8 h-8 text-telegram mb-2" />
               <CardTitle className="text-lg">Sécurisé</CardTitle>
             </CardHeader>
             <CardContent>
