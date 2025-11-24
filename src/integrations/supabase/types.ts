@@ -223,11 +223,14 @@ export type Database = {
       }
       telegram_users: {
         Row: {
+          banned_at: string | null
+          banned_by: string | null
           bot_id: string | null
           first_interaction_at: string
           first_name: string | null
           id: string
           ip_address: string | null
+          is_banned: boolean
           is_bot: boolean | null
           language_code: string | null
           last_interaction_at: string
@@ -239,11 +242,14 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          banned_at?: string | null
+          banned_by?: string | null
           bot_id?: string | null
           first_interaction_at?: string
           first_name?: string | null
           id?: string
           ip_address?: string | null
+          is_banned?: boolean
           is_bot?: boolean | null
           language_code?: string | null
           last_interaction_at?: string
@@ -255,11 +261,14 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          banned_at?: string | null
+          banned_by?: string | null
           bot_id?: string | null
           first_interaction_at?: string
           first_name?: string | null
           id?: string
           ip_address?: string | null
+          is_banned?: boolean
           is_bot?: boolean | null
           language_code?: string | null
           last_interaction_at?: string
