@@ -62,11 +62,11 @@ const Index = () => {
           <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
               <Clock className="w-8 h-8 text-telegram mb-2" />
-              <CardTitle className="text-lg">Expiration 2min</CardTitle>
+              <CardTitle className="text-lg">MESSAGES PERSONALISÉE</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Codes valides pendant 120 secondes
+                Créer un message personnalisée apres la validation du code captcha avec du text, images et boutons
               </p>
             </CardContent>
           </Card>
