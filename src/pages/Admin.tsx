@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Loader2, LogOut, Save, Upload, X, Send, Clock } from "lucide-react";
+import { Shield, Loader2, LogOut, Save, Upload, X, Send, Clock, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -39,6 +39,10 @@ const Admin = () => {
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<Date>();
   const [scheduledTime, setScheduledTime] = useState("12:00");
+  const [drafts, setDrafts] = useState<any[]>([]);
+  const [showDrafts, setShowDrafts] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [showSaveDraftDialog, setShowSaveDraftDialog] = useState(false);
   const [buttons, setButtons] = useState<any[]>([]);
   const [isAddingButton, setIsAddingButton] = useState(false);
   const [editingButton, setEditingButton] = useState<any>(null);
@@ -176,11 +180,178 @@ const Admin = () => {
         const { buttons: buttonsData } = await buttonsResponse.json();
         setButtons(buttonsData || []);
       }
+
+      // Load drafts
+      await loadDrafts();
     } catch (error) {
       console.error('Auth check error:', error);
       navigate("/login");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadDrafts = async () => {
+    try {
+      const session = authStorage.getSession();
+      if (!session) return;
+
+      const token = btoa(JSON.stringify(session));
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-broadcast-drafts`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const { drafts } = await response.json();
+        setDrafts(drafts || []);
+      }
+    } catch (error) {
+      console.error('Error loading drafts:', error);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!draftTitle.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer un titre pour le brouillon",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!broadcastMessage.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Le message ne peut pas être vide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!botConfig) return;
+
+    try {
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+
+      const token = btoa(JSON.stringify(session));
+
+      const draftData = {
+        bot_id: botConfig.id,
+        title: draftTitle,
+        message: broadcastMessage,
+        media_urls: [], // Media URLs are not saved in drafts for now
+        button_ids: selectedBroadcastButtons,
+        is_scheduled: isScheduled,
+        scheduled_date: scheduledDate?.toISOString(),
+        scheduled_time: scheduledTime,
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-broadcast-draft`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'create',
+            draft: draftData,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la sauvegarde du brouillon');
+      }
+
+      toast({
+        title: "Brouillon sauvegardé",
+        description: "Votre brouillon a été enregistré avec succès",
+      });
+
+      setShowSaveDraftDialog(false);
+      setDraftTitle("");
+      await loadDrafts();
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder le brouillon",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadDraft = (draft: any) => {
+    setBroadcastMessage(draft.message);
+    setSelectedBroadcastButtons(draft.button_ids || []);
+    setIsScheduled(draft.is_scheduled || false);
+    if (draft.scheduled_date) {
+      setScheduledDate(new Date(draft.scheduled_date));
+    }
+    if (draft.scheduled_time) {
+      setScheduledTime(draft.scheduled_time);
+    }
+    setShowDrafts(false);
+    toast({
+      title: "Brouillon chargé",
+      description: `"${draft.title}" a été chargé dans le formulaire`,
+    });
+  };
+
+  const deleteDraft = async (draftId: string) => {
+    try {
+      const session = authStorage.getSession();
+      if (!session) return;
+
+      const token = btoa(JSON.stringify(session));
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-broadcast-draft`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'delete',
+            draft: { id: draftId },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la suppression du brouillon');
+      }
+
+      toast({
+        title: "Brouillon supprimé",
+        description: "Le brouillon a été supprimé avec succès",
+      });
+
+      await loadDrafts();
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le brouillon",
+        variant: "destructive",
+      });
     }
   };
 
@@ -415,6 +586,41 @@ const Admin = () => {
           title: "Message envoyé",
           description: `Message diffusé à ${data.sent_count} utilisateur(s)`,
         });
+      }
+
+      // Auto-save as draft after sending
+      if (broadcastMessage.trim()) {
+        const draftTitle = `Envoyé le ${format(new Date(), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`;
+        
+        try {
+          const token = btoa(JSON.stringify(session));
+          await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-broadcast-draft`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                action: 'create',
+                draft: {
+                  bot_id: botConfig.id,
+                  title: draftTitle,
+                  message: broadcastMessage,
+                  media_urls: mediaUrls,
+                  button_ids: selectedBroadcastButtons,
+                  is_scheduled: isScheduled,
+                  scheduled_date: scheduledDate?.toISOString(),
+                  scheduled_time: scheduledTime,
+                },
+              }),
+            }
+          );
+          await loadDrafts();
+        } catch (error) {
+          console.error('Error auto-saving draft:', error);
+        }
       }
 
       setBroadcastMessage("");
@@ -1226,12 +1432,107 @@ const Admin = () => {
           <TabsContent value="broadcast" className="space-y-4 md:space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Message de Publicité</CardTitle>
-                <CardDescription>
-                  Envoyez un message à tous les utilisateurs qui ont utilisé le bot
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Message de Publicité</CardTitle>
+                    <CardDescription>
+                      Envoyez un message à tous les utilisateurs qui ont utilisé le bot
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDrafts(!showDrafts)}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Brouillons ({drafts.length})
+                    </Button>
+                    <Dialog open={showSaveDraftDialog} onOpenChange={setShowSaveDraftDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Save className="h-4 w-4 mr-2" />
+                          Sauvegarder
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Sauvegarder comme brouillon</DialogTitle>
+                          <DialogDescription>
+                            Donnez un titre à votre brouillon pour le retrouver facilement
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="draft-title">Titre du brouillon</Label>
+                            <Input
+                              id="draft-title"
+                              placeholder="Ex: Promotion été 2024"
+                              value={draftTitle}
+                              onChange={(e) => setDraftTitle(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setShowSaveDraftDialog(false)}>
+                            Annuler
+                          </Button>
+                          <Button onClick={handleSaveDraft}>
+                            <Save className="h-4 w-4 mr-2" />
+                            Sauvegarder
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {showDrafts && drafts.length > 0 && (
+                  <Card className="border-primary/20 bg-muted/30">
+                    <CardHeader>
+                      <CardTitle className="text-sm">Mes brouillons</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {drafts.map((draft) => (
+                          <div
+                            key={draft.id}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
+                          >
+                            <div className="flex-1 cursor-pointer" onClick={() => loadDraft(draft)}>
+                              <p className="font-medium text-sm">{draft.title}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-1">
+                                {draft.message}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {format(new Date(draft.updated_at), "PPP", { locale: fr })}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteDraft(draft.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {showDrafts && drafts.length === 0 && (
+                  <Card className="border-muted">
+                    <CardContent className="py-8 text-center text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Aucun brouillon sauvegardé</p>
+                      <p className="text-xs mt-2">Créez votre première publicité et sauvegardez-la comme brouillon</p>
+                    </CardContent>
+                  </Card>
+                )}
+
                 <Card className="border-telegram/20">
                   <CardHeader>
                     <CardTitle className="text-sm">Formatage HTML Telegram</CardTitle>
