@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { encryptToken } from '../_shared/encryption.ts';
+import { hashRecoveryKey } from '../_shared/hash.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -77,18 +77,18 @@ Deno.serve(async (req) => {
 
     // Générer une nouvelle clé unique
     let recoveryKey: string;
-    let encryptedKey: string;
+    let hashedKey: string;
     let isUnique = false;
     
     while (!isUnique) {
       recoveryKey = generateRecoveryKey();
-      encryptedKey = await encryptToken(recoveryKey);
+      hashedKey = await hashRecoveryKey(recoveryKey);
       
-      // Vérifier l'unicité de la clé cryptée
+      // Vérifier l'unicité du hash
       const { data: existing } = await supabaseClient
         .from('recovery_keys')
         .select('id')
-        .eq('recovery_key', encryptedKey)
+        .eq('recovery_key', hashedKey)
         .single();
       
       if (!existing) {
@@ -96,12 +96,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Insérer la nouvelle clé cryptée
+    // Insérer la nouvelle clé hashée
     const { data: newKey, error } = await supabaseClient
       .from('recovery_keys')
       .insert({
         user_id: userId,
-        recovery_key: encryptedKey!,
+        recovery_key: hashedKey!,
       })
       .select()
       .single();
