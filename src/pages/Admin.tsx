@@ -81,14 +81,14 @@ const Admin = () => {
 
       const userId = session.user.id;
 
-      // Check if user is admin
+      // Check if user is admin or super_admin
       const { data: userData } = await supabase
         .from('users')
         .select('role')
         .eq('id', userId)
         .single();
 
-      if (userData && userData.role === 'admin') {
+      if (userData && (userData.role === 'admin' || userData.role === 'super_admin')) {
         setIsAdmin(true);
       }
 
