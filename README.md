@@ -109,16 +109,34 @@ Le projet utilise les secrets suivants (configurés automatiquement) :
 
 ## 🚀 Déploiement
 
-### Déploiement sur Lovable (Recommandé)
+### Option 1 : Remix sur Lovable (Le plus Simple) ⚡
 
-1. **Connectez-vous à Lovable** : [https://lovable.dev](https://lovable.dev)
+**Démarrez en 1 clic avec votre propre copie du projet :**
 
-2. **Publiez votre application** :
+[![Remix on Lovable](https://lovable.dev/remix-button.svg)](https://lovable.dev/projects/b21b7408-a903-4b62-9dc2-f44385cbd306/remix)
+
+En cliquant sur "Remix", vous obtiendrez :
+- ✅ Une copie complète du code source
+- ✅ Votre propre base de données Lovable Cloud (vierge)
+- ✅ Tous les secrets automatiquement configurés
+- ✅ Un environnement prêt à l'emploi en quelques secondes
+
+**Important** : Le remix crée un projet totalement indépendant. Vous aurez votre propre base de données vide, vos propres secrets, et aucune connexion avec le projet d'origine.
+
+### Option 2 : Déploiement sur Lovable (Si vous avez cloné le code)
+
+1. **Créez un compte Lovable** : [https://lovable.dev](https://lovable.dev)
+
+2. **Créez un nouveau projet** :
+   - Importez votre code source cloné
+   - Lovable Cloud se configurera automatiquement
+
+3. **Publiez votre application** :
    - Cliquez sur le bouton **"Publish"** en haut à droite
    - Votre application frontend sera déployée automatiquement
    - Les Edge Functions sont déployées automatiquement à chaque modification
 
-3. **Configuration du domaine** :
+4. **Configuration du domaine** (optionnel) :
    - Allez dans `Project → Settings → Domains`
    - Cliquez sur "Connect Domain"
    - Suivez les instructions pour votre domaine personnalisé
@@ -129,7 +147,7 @@ Le projet utilise les secrets suivants (configurés automatiquement) :
 - **Changements Frontend** : Nécessitent de cliquer sur "Update" dans le dialogue de publication
 - **Changements Backend** : Se déploient automatiquement et immédiatement (Edge Functions, migrations)
 
-### Auto-hébergement
+### Option 3 : Auto-hébergement
 
 Si vous souhaitez héberger l'application ailleurs :
 
