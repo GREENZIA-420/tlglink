@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { encryptPassword } from '../_shared/encryption-password.ts';
-import { encryptToken } from '../_shared/encryption.ts';
+import { hashRecoveryKey } from '../_shared/hash.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,19 +35,20 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Crypter la clé fournie pour la comparer avec celle en base
-    const encryptedKey = await encryptToken(recovery_key.trim().toUpperCase());
+    // Hasher la clé fournie pour la comparer avec celle en base
+    const hashedKey = await hashRecoveryKey(recovery_key);
 
-    // Vérifier la clé de récupération cryptée
+    // Vérifier la clé de récupération hashée
     const { data: keyData, error: keyError } = await supabaseClient
       .from('recovery_keys')
       .select('*')
-      .eq('recovery_key', encryptedKey)
+      .eq('recovery_key', hashedKey)
       .eq('is_active', true)
       .is('used_at', null)
       .single();
 
     if (keyError || !keyData) {
+      console.error('Key verification error:', keyError);
       return new Response(
         JSON.stringify({ error: 'Clé de récupération invalide ou déjà utilisée' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
