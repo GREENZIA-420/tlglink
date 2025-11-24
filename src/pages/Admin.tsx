@@ -7,12 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Loader2, LogOut, Save, Upload, X, Send } from "lucide-react";
+import { Shield, Loader2, LogOut, Save, Upload, X, Send, Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { authStorage, logout } from "@/lib/auth";
 
 const Admin = () => {
@@ -29,6 +36,9 @@ const Admin = () => {
   const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
   const [broadcastMediaFiles, setBroadcastMediaFiles] = useState<File[]>([]);
   const [selectedBroadcastButtons, setSelectedBroadcastButtons] = useState<string[]>([]);
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState<Date>();
+  const [scheduledTime, setScheduledTime] = useState("12:00");
   const [buttons, setButtons] = useState<any[]>([]);
   const [isAddingButton, setIsAddingButton] = useState(false);
   const [editingButton, setEditingButton] = useState<any>(null);
@@ -313,8 +323,41 @@ const Admin = () => {
       return;
     }
 
+    // Validate scheduled date if scheduled
+    if (isScheduled) {
+      if (!scheduledDate) {
+        toast({
+          title: "Erreur",
+          description: "Veuillez sélectionner une date",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Combine date and time
+      const [hours, minutes] = scheduledTime.split(':').map(Number);
+      const scheduledDateTime = new Date(scheduledDate);
+      scheduledDateTime.setHours(hours, minutes, 0, 0);
+
+      // Check if date is in the past
+      if (scheduledDateTime <= new Date()) {
+        toast({
+          title: "Erreur",
+          description: "La date et l'heure doivent être dans le futur",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsSendingBroadcast(true);
     try {
+      const session = authStorage.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+
       // Upload media files if any
       const mediaUrls: string[] = [];
       
@@ -340,25 +383,46 @@ const Admin = () => {
         }
       }
 
+      // Prepare scheduled_for if needed
+      let scheduledFor: string | undefined;
+      if (isScheduled && scheduledDate) {
+        const [hours, minutes] = scheduledTime.split(':').map(Number);
+        const scheduledDateTime = new Date(scheduledDate);
+        scheduledDateTime.setHours(hours, minutes, 0, 0);
+        scheduledFor = scheduledDateTime.toISOString();
+      }
+
       const { data, error } = await supabase.functions.invoke('broadcast-message', {
         body: {
           bot_id: botConfig.id,
+          admin_id: session.user.id,
           message: broadcastMessage,
           media_urls: mediaUrls,
           button_ids: selectedBroadcastButtons,
+          scheduled_for: scheduledFor,
         },
       });
 
       if (error) throw error;
 
-      toast({
-        title: "Message envoyé",
-        description: `Message diffusé à ${data.sent_count} utilisateur(s)`,
-      });
+      if (data.scheduled) {
+        toast({
+          title: "Message planifié",
+          description: `Le message sera envoyé le ${format(new Date(data.scheduled_for), "PPP 'à' HH:mm", { locale: fr })}`,
+        });
+      } else {
+        toast({
+          title: "Message envoyé",
+          description: `Message diffusé à ${data.sent_count} utilisateur(s)`,
+        });
+      }
 
       setBroadcastMessage("");
       setBroadcastMediaFiles([]);
       setSelectedBroadcastButtons([]);
+      setIsScheduled(false);
+      setScheduledDate(undefined);
+      setScheduledTime("12:00");
     } catch (error) {
       console.error('Broadcast error:', error);
       toast({
@@ -1182,6 +1246,84 @@ const Admin = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-primary" />
+                      <div>
+                        <Label htmlFor="schedule-mode" className="text-sm font-medium">
+                          Planifier l'envoi
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Programmer l'envoi pour une date et heure précises
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="schedule-mode"
+                      checked={isScheduled}
+                      onCheckedChange={setIsScheduled}
+                    />
+                  </div>
+
+                  {isScheduled && (
+                    <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Date</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !scheduledDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {scheduledDate ? (
+                                  format(scheduledDate, "PPP", { locale: fr })
+                                ) : (
+                                  <span>Sélectionner une date</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={scheduledDate}
+                                onSelect={setScheduledDate}
+                                disabled={(date) => date < new Date()}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="scheduled-time">Heure</Label>
+                          <Input
+                            id="scheduled-time"
+                            type="time"
+                            value={scheduledTime}
+                            onChange={(e) => setScheduledTime(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      {scheduledDate && (
+                        <div className="text-sm text-muted-foreground p-3 bg-background rounded-lg border">
+                          📅 Le message sera envoyé le{" "}
+                          <span className="font-medium text-foreground">
+                            {format(scheduledDate, "PPP", { locale: fr })} à {scheduledTime}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className="space-y-2">
                   <Label>Message à diffuser</Label>
