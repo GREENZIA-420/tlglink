@@ -65,6 +65,13 @@ export type Database = {
             referencedRelation: "bot_configs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bot_buttons_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bot_configs: {
@@ -98,7 +105,15 @@ export type Database = {
           updated_at?: string
           webhook_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bot_configs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bot_settings: {
         Row: {
@@ -134,6 +149,13 @@ export type Database = {
             columns: ["bot_id"]
             isOneToOne: false
             referencedRelation: "bot_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -281,6 +303,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "telegram_users_banned_by_fkey"
+            columns: ["banned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "telegram_users_bot_id_fkey"
             columns: ["bot_id"]
             isOneToOne: false
@@ -308,7 +337,15 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {
@@ -353,6 +390,7 @@ export type Database = {
     Functions: {
       cleanup_expired_captcha_codes: { Args: never; Returns: undefined }
       count_registered_users: { Args: never; Returns: number }
+      get_current_user_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
