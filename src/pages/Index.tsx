@@ -50,11 +50,11 @@ const Index = () => {
           <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
               <CheckCircle2 className="w-8 h-8 text-telegram mb-2" />
-              <CardTitle className="text-lg">Codes Uniques</CardTitle>
+              <CardTitle className="text-lg">CODES CAPTCHA</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Génération automatique de codes à 6 chiffres
+                Génération automatique de codes à 6 chiffres au demarrage de votre bot
               </p>
             </CardContent>
           </Card>
